@@ -44,7 +44,7 @@ class MemberOut(BaseModel):
     name: str
 
 
-class AssignmentOut(BaseModel):
+class AssignmentSummaryOut(BaseModel):
     id: int
     title: str
     start_date: datetime
@@ -52,7 +52,27 @@ class AssignmentOut(BaseModel):
     join_code: str
     checkpoints: list[float]
     join_url: str
+
+
+class AssignmentOut(AssignmentSummaryOut):
     teams: list[TeamOut]
+
+
+class TeamHealthOut(BaseModel):
+    id: int
+    name: str
+    charter_locked: bool
+    member_count: int
+    health: str  # "red" | "amber" | "green"
+    open_team_alerts: int
+    disputed_entries: int
+    flagged_pastes: int
+
+
+class OverviewOut(BaseModel):
+    assignment: AssignmentSummaryOut
+    t: float
+    teams: list[TeamHealthOut]
 
 
 class CharterItemIn(BaseModel):

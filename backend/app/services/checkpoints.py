@@ -24,23 +24,28 @@ def checkpoint_time(a: Assignment, c: float) -> datetime:
     return a.start_date + (a.due_date - a.start_date) * c
 
 
-def team_contribution(session: Session, team: Team, t: float, cutoff: datetime) -> list[Contribution]:
-    """Contribution rows at fraction t, counting only records created at or before cutoff."""
-    members = session.exec(select(Member).where(Member.team_id == team.id).order_by(Member.id)).all()
-    items = session.exec(select(CharterItem).where(CharterItem.team_id == team.id)).all()
+def entry_points(session: Session, team_id: int, team_size: int, cutoff: datetime) -> list[EntryPoints]:
+    """The team's entries created at or before cutoff, with status from reviews up to cutoff."""
     entries = session.exec(
-        select(Entry).where(Entry.team_id == team.id, Entry.created_at <= cutoff)
+        select(Entry).where(Entry.team_id == team_id, Entry.created_at <= cutoff)
     ).all()
-    verdicts: dict[int, list[str]] = {e.id: [] for e in entries}
-    if entries:
+    verdicts: dict[int, list[str]] = {e.id: [] for e in entries if e.id is not None}
+    if verdicts:
         for r in session.exec(
             select(Review).where(col(Review.entry_id).in_(verdicts), Review.created_at <= cutoff)
         ).all():
             verdicts[r.entry_id].append(r.verdict)
-    points = [
-        EntryPoints(e.member_id, e.size, entry_status(verdicts[e.id], len(members)))
-        for e in entries
+    return [
+        EntryPoints(e.member_id, e.size, entry_status(verdicts[e.id], team_size))
+        for e in entries if e.id is not None
     ]
+
+
+def team_contribution(session: Session, team: Team, t: float, cutoff: datetime) -> list[Contribution]:
+    """Contribution rows at fraction t, counting only records created at or before cutoff."""
+    members = session.exec(select(Member).where(Member.team_id == team.id).order_by(Member.id)).all()
+    items = session.exec(select(CharterItem).where(CharterItem.team_id == team.id)).all()
+    points = entry_points(session, team.id, len(members), cutoff)
     return contribution_rows([MemberInfo(m.id, m.name) for m in members], items, points, t)
 
 

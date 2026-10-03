@@ -54,6 +54,13 @@ Computed per member, at time `t`.
 - **private**: only the member it is about.
 - **team**: every member of the team.
 
+## Team health (overview)
+
+- **red**: any open (unresolved) `team` alert.
+- **amber**: otherwise, any disputed entry.
+- **green**: otherwise.
+- Private alerts never affect health, so they stay private.
+
 ## Paste detection
 
 Detected in the frontend, stored by the backend.

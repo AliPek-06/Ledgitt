@@ -20,7 +20,7 @@ Conventions:
 | `start_date` | datetime | |
 | `due_date` | datetime | |
 | `join_code` | string | |
-| `checkpoints` | float[] | Default `[0.25, 0.5, 0.75]` |
+| `checkpoints` | float[] | Default `[0.33, 0.66]` |
 
 ### Team
 
@@ -125,7 +125,7 @@ One shared document per team.
 | `team_id` | int | |
 | `member_id` | int | |
 | `checkpoint` | float | |
-| `level` | `"private"` \| `"team"` \| `"teacher"` | |
+| `level` | `"private"` \| `"team"` | Streak 1 = private, 2+ = team |
 | `reason` | string | |
 | `created_at` | datetime | |
 | `resolved` | bool | |
@@ -243,6 +243,21 @@ Append-only. There are no update or delete endpoints for entries or reviews.
   - Only alerts with `created_at <= now` are returned. An alert's `created_at` is the moment of its checkpoint.
   - Resolved alerts are included, with `resolved: true`.
 
+### Overview
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/api/assignments/{id}/overview` | | `{assignment, t, teams: TeamHealth[]}` |
+
+- `assignment` = [Assignment](#assignment) fields + `join_url`.
+- **TeamHealth** = `{id, name, charter_locked, member_count, health, open_team_alerts, disputed_entries, flagged_pastes}`.
+- `health` (see RULES.md):
+  - `red` if any open `team` alert
+  - `amber` if any disputed entry
+  - otherwise `green`
+- Private alerts never count towards `health`.
+- Counts only include records with `created_at <= now`. Due checkpoints are run for each team first.
+
 ### Demo time
 
 | Method | Path | Body | Response |
@@ -251,4 +266,12 @@ Append-only. There are no update or delete endpoints for entries or reviews.
 | POST | `/api/demo/time` | `{now: datetime \| null}` | `{now, overridden}` |
 
 - `now: null` clears the override and returns to real UTC time.
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| POST | `/api/demo/reset` | | `{"ok": true}` |
+| POST | `/api/demo/seed` | | Overview of the seeded assignment (id `1`) |
+
+- Reset drops and recreates every table, so ids restart at 1, and clears the clock override.
+- Seed resets, loads the demo story (assignment "Engineering Design Report", join code `ENGDES`, Group 7 and Group 3) and sets the clock to t = 0.20. All seeded timestamps are fixed, so seeding twice gives identical data.
 - After changing the time, runs due checkpoint evaluation for every team with a locked charter.

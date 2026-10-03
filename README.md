@@ -19,6 +19,12 @@ uvicorn app.main:app --reload --port 8000
 
 API at http://localhost:8000, interactive docs at http://localhost:8000/docs.
 
+Load the demo story (wipes the database, sets demo time to 20% of the timeline):
+
+```bash
+curl -X POST localhost:8000/api/demo/seed
+```
+
 Run tests:
 
 ```bash

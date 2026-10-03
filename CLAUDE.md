@@ -203,5 +203,42 @@ EvaluatedCheckpoint and resolved flags stay; alerts still hide by created_at.
 evaluate_due_checkpoints first.
 - API.md:
   - Contribution model completed; "Contribution and alerts" section added.
-  - The model section still says Alert.level may be "teacher" and the checkpoint
-  default is [0.25, 0.5, 0.75]. Both are stale.
+  - Model section fixed afterwards: Alert.level is "private" | "team" and the
+  checkpoint default is [0.33, 0.66]. API.md and RULES.md now agree.
+### 2026-10-03 - Phase B7: overview, demo reset and seed
+- Requirements were adapted to the current rules: checkpoints 0.33/0.66, no teacher.
+Health: red = open team alert, amber = disputed entry, else green. Private alerts
+never affect health.
+- app/services/warnings.py: team_health(open_team_alerts, disputed_entries), pure.
+- app/services/checkpoints.py: extracted entry_points(session, team_id, team_size,
+cutoff), used by team_contribution and the overview.
+- app/routers/overview.py: GET /api/assignments/{id}/overview ->
+{assignment (summary + join_url), t, teams: [{id, name, charter_locked,
+member_count, health, open_team_alerts, disputed_entries, flagged_pastes}]}.
+It evaluates due checkpoints for every team first. Counts use created_at <= now.
+- app/schemas.py: AssignmentSummaryOut (AssignmentOut now extends it with teams),
+TeamHealthOut, OverviewOut.
+- app/services/seed.py: reset_db(session) drops and recreates all tables via
+session.get_bind() and clears the clock. seed(session) resets, then writes rows
+directly with fixed timestamps and sets the clock to t=0.20.
+  - Assignment 1 "Engineering Design Report", 2026-09-07 -> 2026-10-19, join code
+  ENGDES.
+  - Group 7 (id 1): Maya 1, Jordan 2, Priya 3, Sam 4.
+    - Sam's first entry is at day 14.5, just after 33% (day 13.86).
+    - Priya's day-8 entry is left pending (1 of 2 confirms) for a live confirm.
+    - Jordan's 900-char unlabelled paste at t=0.15; the document holds that text.
+    - Jordan's "Wrote section 3 analysis" (day 17): Maya confirms, Priya disputes at
+    t=0.45.
+  - Group 3 (id 2): Alex 5, Ben 6, Chloe 7. Ben has no entries and no reviews.
+- Story at each step:
+  - t=0.20: both groups green.
+  - t=0.35: Sam and Ben private; both green.
+  - t=0.50: Group 7 amber (dispute).
+  - t=0.70: Sam resolved, Ben team; Group 7 amber, Group 3 red.
+- app/routers/demo.py:
+  - POST /api/demo/reset -> {"ok": true}
+  - POST /api/demo/seed -> overview of assignment 1
+- Tests: tests/test_seed.py (story, seeding twice identical, reset, overview ignores
+private/future) and test_team_health; 164 tests total.
+- Docs: API.md has Overview and demo reset/seed. RULES.md has a Team health section.
+README shows how to seed.
