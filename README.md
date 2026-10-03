@@ -11,7 +11,7 @@ early warnings at time checkpoints when someone falls behind their own plan.
 
 ```bash
 cd backend
-python3.11 -m venv .venv
+python3.11 -m venv .venv   # any Python >= 3.11 works
 source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
