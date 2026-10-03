@@ -299,3 +299,118 @@ README shows how to seed.
 - Open: mocks don't run checkpoint evaluation, so moving time only shows/hides the
   fixture alerts; the real escalation story needs the backend (I1/I2). The mock seed
   reloads the F1 fixtures, not the backend's "Engineering Design Report" story.
+### 2026-10-03 - Phase I1: integration (frontend against the real backend)
+- Setup: frontend/.env.local has VITE_USE_MOCKS=false (gitignored by *.local).
+`npm install` was run in frontend/; no new dependencies.
+- Checked every screen against the seeded backend: join, teacher new/dashboard,
+charter, workspace ledger/document/progress, alerts, demo panel. Also called every
+client.ts function directly against the backend, including the 400/403/404 cases.
+API.md endpoints still match the backend's 24 routes exactly.
+- Mismatches fixed (frontend changed to match API.md unless noted):
+  1. Join page crashed: it expected {assignment, teams}. The type is now
+  AssignmentDetail (assignment fields + join_url + teams), used by getJoinInfo,
+  getAssignment and createAssignment. JoinInfo and AssignmentCreated were removed.
+  2. Teacher dashboard crashed: it expected {team, members, open_disputes,
+  teacher_alerts}. TeamOverview now matches the API.md TeamHealth row, and Overview
+  has t. TeamCard shows "N members", "N open disputes", an "N team alert(s) open"
+  notice and "N unlabelled paste(s)".
+  3. Teacher alert level removed from the frontend (AlertLevel, LEVEL_RANK,
+  AlertsBanner, the Viewer type). listAlerts(teamId, viewerId: number).
+  TeamWorkspace only polls alerts when the current user is in the team; previously
+  the teacher got 422 and outsiders got 400 every 3 s. The teacher persona stays.
+  4. seedDemo() return type is now Overview.
+  5. Document.updated_by is number | null in types.ts AND in API.md, which used to
+  say int.
+  6. getAssignment() returns AssignmentDetail.
+- Mocks (src/mocks) updated to the same shapes and rules: listAlerts rejects
+non-members, the fixture's Ben alert is now level "team", seedDemo returns the
+overview.
+- Also fixed:
+  - A: the seed paste text was cut mid-word. backend/app/services/seed.py now has a
+  900-char paragraph ending in a full stop (asserted at import).
+  - B: UserSwitcher showed "Member #4" off team pages. It now caches member names in
+  localStorage "ledger.memberNames" whenever a team loads.
+- Verified live:
+  - The overview goes green/green -> amber/green -> amber/red at t = 0.35/0.50/0.70.
+  - Teacher workspace sends no alert requests.
+  - Alex sees Ben's team alert.
+  - No console errors.
+  - 164 backend tests pass; frontend tsc is clean.
+- Alert reason fixed afterwards (backend):
+  - _alert_reason(row) in app/services/checkpoints.py is now just "{actual} of
+  {expected:.1f} expected points confirmed". The checkpoint lives in
+  Alert.checkpoint, and the frontend banner says "At the N% checkpoint" itself.
+  - Test in test_recovery_resolves_alerts_and_resets_streak.
+  - API.md Alert.reason/created_at notes added.
+  - Mock fixture reasons use the same format.
+### 2026-10-03 - Phase I2: demo script walkthrough
+- Walked the 9-step script in Chrome against the seeded backend. Steps 1-8 behave as
+scripted after these fixes (no features added):
+  - Document save loop (frontend/src/components/document/DocumentEditor.tsx):
+  TipTap's setEditable(editable, emitUpdate = true) emitted an update on every
+  team poll, because `me` is a new object each poll. That re-saved the document
+  every 3 s, left the status stuck on "Editing…", and blocked or overwrote
+  teammates' changes. Now it depends on a boolean canEdit and calls
+  setEditable(canEdit, false). Verified: only GETs while idle, status "Saved".
+  - formatPct (frontend/src/lib/format.ts) now rounds down (+1e-9 for float error).
+  Rounding to nearest showed "33%" from 32.5% on, so sliding to "33%" could give
+  no nudge. Applies everywhere percentages show.
+  - AlertsBanner shows only each member's latest open alert. Ben at 66% saw both the
+  team alert and his still-open 33% private nudge, with different numbers.
+- Checked and fine: D toggles the demo panel (the hidden state persists in
+  localStorage "ledger.demoPanel"). The jump button sets checkpoint + 1 h.
+- Decided by the user and done:
+  - Teachers are never notified (script step 9).
+    - team_health(disputed_entries) is amber if any dispute, otherwise green. There
+    is no red any more.
+    - open_team_alerts removed from TeamHealthOut, the overview, API.md and the
+    frontend types and mocks.
+    - The teacher card shows no alert text.
+    - RULES.md "Team health" and API.md Overview updated.
+    - Tests: test_team_health, the story (Group 3 stays green at 70%),
+    test_overview_never_reflects_alerts, test_overview_hides_future_disputes.
+  - Teammates' status is private:
+    - frontend/src/lib/progress.ts displayStatus() shows another member's
+    on_track/behind as "not_shared" ("Private to them", neutral grey bar) unless an
+    open team-level alert about them is visible.
+    - Your own row and "not started yet" always show.
+    - On-track teammates are masked too, otherwise the neutral pill would single
+    out who is behind.
+    - The teacher and outsiders see all rows as private.
+- Verified live after the changes:
+  - Maya at 33%: all teammates "Private to them".
+  - Alex at 66%: Ben "Some catching up to do", Chloe private.
+  - Teacher at 66%: Group 7 amber, Group 3 green, no alerts.
+  - 164 backend tests pass; frontend tsc is clean.
+### 2026-10-03 - Phase I3: polish (no new features)
+- Loading/empty states:
+  - ProgressTab no longer hangs on "Loading progress…" when getAssignment fails; it
+  shows "We couldn't load progress just now. Please try again."
+  - ProgressTab "Planned vs confirmed": with no members it shows "No members yet…"
+  instead of an empty chart.
+  - TeamWorkspace header shows "No members yet" instead of a blank line.
+  - Join loading text is "Loading the assignment…".
+  - TeacherAssignment: a 404 shows "We couldn't find this assignment…"; other errors
+  show a generic retry message, never the raw error text.
+- Projector (checked at 1280 CSS px wide, top 720 px as the fold):
+  - Layout <main> has pb-80 so content can scroll clear of the fixed demo panel. It
+  had covered the "Label it" button in script step 4.
+  - DemoPanel is w-[22rem] (was w-80), so "View as" mostly fits on one row.
+  - Low-contrast text-stone-400 -> stone-500 for review timestamps (EntryCard) and
+  not-yet-reached check-in ladder steps (EscalationLadder).
+  - The "Private to them" pill no longer shows a double dot (icon removed).
+- Wording:
+  - EscalationLadder: "Flagged at 33%" -> "Behind at the 33% check-in"; "was flagged
+  at …" -> "was a bit behind at the … check-in(s), and is now keeping up".
+  - Fallback errors use one pattern: "We couldn't <action> just now. Please try
+  again." (log work, review, label, save/lock charter, join, create assignment).
+  - TeacherNew: a blank (whitespace) title gives "Give the assignment a title."
+  instead of a backend 422.
+  - client.ts: a 422 whose detail is not a string shows "Some details aren't quite
+  right. Please check the form and try again." instead of "Unprocessable Content".
+- Console: walked the full script (teacher, charter, ledger, label paste as Jordan,
+33% Sam/Maya, 55% live confirm + dispute modal, 66% Sam, Group 3 Alex/Ben, teacher)
+plus home, join, new assignment, 404 page. No errors or warnings, only React's
+DevTools info line.
+- Note for automation: some scripted clicks on Confirm didn't register, but a JS
+.click() and the handler (plain onClick) work. This was not reproduced as an app bug.

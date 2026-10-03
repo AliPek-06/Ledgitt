@@ -149,9 +149,13 @@ export default function DocumentEditor({ teamId, initial, me, onPasteEvent }: Pr
     [],
   );
 
+  // Depend on the boolean, not `me` (a new object on every team poll), and don't
+  // emit an update: TipTap's setEditable emits one by default, which looked like
+  // an edit and re-saved the document every 3 s, overwriting teammates' changes.
+  const canEdit = me !== undefined;
   useEffect(() => {
-    editor?.setEditable(me !== undefined);
-  }, [editor, me]);
+    editor?.setEditable(canEdit, false);
+  }, [editor, canEdit]);
 
   // Pick up teammates' saves, but only while this user has nothing unsaved and
   // isn't typing, so a refresh never overwrites their work or moves their cursor.

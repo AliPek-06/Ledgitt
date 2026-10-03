@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, createAssignment } from "../api/client";
-import type { AssignmentCreated } from "../api/types";
+import type { AssignmentDetail } from "../api/types";
 import { formatDateRange } from "../lib/format";
 
 // <input type="date"> gives "YYYY-MM-DD"; send it as local midnight in ISO 8601.
@@ -15,10 +15,14 @@ export default function TeacherNew() {
   const [dueDate, setDueDate] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [created, setCreated] = useState<AssignmentCreated | null>(null);
+  const [created, setCreated] = useState<AssignmentDetail | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!title.trim()) {
+      setError("Give the assignment a title.");
+      return;
+    }
     if (dueDate <= startDate) {
       setError("The due date needs to be after the start date.");
       return;
@@ -28,7 +32,7 @@ export default function TeacherNew() {
     try {
       setCreated(await createAssignment({ title: title.trim(), start_date: toIso(startDate), due_date: toIso(dueDate) }));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setError(err instanceof ApiError ? err.message : "We couldn't create the assignment just now. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -90,7 +94,7 @@ export default function TeacherNew() {
   );
 }
 
-function JoinLink({ assignment }: { assignment: AssignmentCreated }) {
+function JoinLink({ assignment }: { assignment: AssignmentDetail }) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {

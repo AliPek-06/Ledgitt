@@ -5,8 +5,7 @@ import * as mock from "../mocks/mockApi";
 import { ApiError } from "./errors";
 import type {
   Alert,
-  Assignment,
-  AssignmentCreated,
+  AssignmentDetail,
   CharterItemInput,
   ContributionReport,
   CreateAssignmentBody,
@@ -16,7 +15,6 @@ import type {
   DemoTime,
   Document,
   Entry,
-  JoinInfo,
   LabelPasteBody,
   Member,
   Ok,
@@ -25,7 +23,6 @@ import type {
   SaveDocumentBody,
   Team,
   TeamDetail,
-  Viewer,
 } from "./types";
 
 export { ApiError };
@@ -44,6 +41,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     try {
       const data = await res.json();
       if (typeof data?.detail === "string") message = data.detail;
+      else if (res.status === 422) message = "Some details aren't quite right. Please check the form and try again.";
     } catch {
       // Non-JSON error body; keep statusText.
     }
@@ -54,12 +52,12 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
 // ---- Assignments ----
 
-export async function createAssignment(body: CreateAssignmentBody): Promise<AssignmentCreated> {
+export async function createAssignment(body: CreateAssignmentBody): Promise<AssignmentDetail> {
   if (USE_MOCKS) return mock.createAssignment(body);
   return request("POST", "/assignments", body);
 }
 
-export async function getAssignment(assignmentId: number): Promise<Assignment> {
+export async function getAssignment(assignmentId: number): Promise<AssignmentDetail> {
   if (USE_MOCKS) return mock.getAssignment(assignmentId);
   return request("GET", `/assignments/${assignmentId}`);
 }
@@ -69,7 +67,7 @@ export async function getOverview(assignmentId: number): Promise<Overview> {
   return request("GET", `/assignments/${assignmentId}/overview`);
 }
 
-export async function getJoinInfo(joinCode: string): Promise<JoinInfo> {
+export async function getJoinInfo(joinCode: string): Promise<AssignmentDetail> {
   if (USE_MOCKS) return mock.getJoinInfo(joinCode);
   return request("GET", `/join/${encodeURIComponent(joinCode)}`);
 }
@@ -152,9 +150,10 @@ export async function getContribution(teamId: number): Promise<ContributionRepor
   return request("GET", `/teams/${teamId}/contribution`);
 }
 
-export async function listAlerts(teamId: number, viewer: Viewer): Promise<Alert[]> {
-  if (USE_MOCKS) return mock.listAlerts(teamId, viewer);
-  return request("GET", `/teams/${teamId}/alerts?viewer_id=${viewer}`);
+// viewerId must be a member of the team (the backend returns 400 otherwise).
+export async function listAlerts(teamId: number, viewerId: number): Promise<Alert[]> {
+  if (USE_MOCKS) return mock.listAlerts(teamId, viewerId);
+  return request("GET", `/teams/${teamId}/alerts?viewer_id=${viewerId}`);
 }
 
 // ---- Demo ----
@@ -169,7 +168,8 @@ export async function setDemoTime(now: string): Promise<DemoTime> {
   return request("POST", "/demo/time", { now });
 }
 
-export async function seedDemo(): Promise<Ok> {
+// Returns the overview of the seeded assignment (id 1).
+export async function seedDemo(): Promise<Overview> {
   if (USE_MOCKS) return mock.seedDemo();
   return request("POST", "/demo/seed");
 }

@@ -76,7 +76,7 @@ export default function LogWorkForm({ team, me, onLogged }: Props) {
       setTimeout(() => setJustLogged(false), 2500);
       onLogged();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Logging failed. Please try again.");
+      setError(err instanceof ApiError ? err.message : "We couldn't log that just now. Please try again.");
     } finally {
       setSubmitting(false);
     }

@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { getTeam, listAlerts } from "../api/client";
+import type { Alert } from "../api/types";
 import AlertsBanner from "../components/AlertsBanner";
 import LedgerTab from "../components/ledger/LedgerTab";
 import { useCurrentUser } from "../context/CurrentUserContext";
@@ -19,6 +20,8 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
+const NO_ALERTS: Alert[] = [];
+
 export default function TeamWorkspace() {
   const teamId = Number(useParams().teamId);
   const { currentUser } = useCurrentUser();
@@ -26,7 +29,14 @@ export default function TeamWorkspace() {
   const tab: TabId = TABS.some((t) => t.id === params.get("tab")) ? (params.get("tab") as TabId) : "ledger";
 
   const { data: team, error } = usePolling(() => getTeam(teamId), [teamId]);
-  const { data: alerts } = usePolling(() => listAlerts(teamId, currentUser), [teamId, currentUser]);
+  // Alerts are only fetched for members of this team (the API rejects anyone else),
+  // so the teacher and outsiders see the workspace without an alerts banner.
+  const memberId =
+    typeof currentUser === "number" && team?.members.some((m) => m.id === currentUser) ? currentUser : null;
+  const { data: alerts } = usePolling(
+    () => (memberId !== null ? listAlerts(teamId, memberId) : Promise.resolve(NO_ALERTS)),
+    [teamId, memberId],
+  );
 
   if (!team) {
     return <p className="text-stone-500">{error ? "We couldn't load this team." : "Loading workspace…"}</p>;
@@ -41,7 +51,9 @@ export default function TeamWorkspace() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold">{team.name}</h1>
-          <p className="mt-1 text-stone-600">{team.members.map((m) => m.name).join(", ")}</p>
+          <p className="mt-1 text-stone-600">
+            {team.members.length > 0 ? team.members.map((m) => m.name).join(", ") : "No members yet"}
+          </p>
         </div>
         <Link to={`/team/${team.id}/charter`} className="font-medium text-accent hover:underline">
           {team.charter_locked ? "View charter" : "Charter still being planned →"}

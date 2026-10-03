@@ -1,13 +1,12 @@
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import type { Contribution } from "../../api/types";
-import { PLANNED_COLOR, STATUS, formatPoints } from "../../lib/progress";
+import { type DisplayContribution, PLANNED_COLOR, STATUS, formatPoints } from "../../lib/progress";
 
 interface Props {
-  members: Contribution[];
+  members: DisplayContribution[];
   viewerId?: number;
 }
 
-interface Row extends Contribution {
+interface Row extends DisplayContribution {
   label: string;
 }
 

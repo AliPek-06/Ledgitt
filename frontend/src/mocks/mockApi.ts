@@ -8,7 +8,7 @@ import { ApiError } from "../api/errors";
 import type {
   Alert,
   Assignment,
-  AssignmentCreated,
+  AssignmentDetail,
   CharterItemInput,
   Contribution,
   ContributionReport,
@@ -20,7 +20,6 @@ import type {
   Document,
   Entry,
   EntrySize,
-  JoinInfo,
   LabelPasteBody,
   Member,
   Ok,
@@ -31,7 +30,6 @@ import type {
   Team,
   TeamDetail,
   TeamHealth,
-  Viewer,
 } from "../api/types";
 import * as fx from "./fixtures";
 
@@ -85,6 +83,11 @@ function newestFirst<T extends { created_at: string }>(rows: T[]): T[] {
 const findTeam = (id: number) => find(db.teams.find((t) => t.id === id), "Team");
 const findAssignment = (id: number) => find(db.assignments.find((a) => a.id === id), "Assignment");
 const teamMembers = (teamId: number) => db.members.filter((m) => m.team_id === teamId);
+const joinUrl = (code: string) => `http://localhost:5173/join/${code}`;
+
+function assignmentDetail(a: Assignment): AssignmentDetail {
+  return { ...a, join_url: joinUrl(a.join_code), teams: db.teams.filter((t) => t.assignment_id === a.id) };
+}
 
 function deriveStatus(entry: Entry): Entry["status"] {
   const reviews = visible(entry.reviews);
@@ -122,7 +125,7 @@ function elapsedFraction(assignment: Assignment): number {
 
 // ---- Assignments ----
 
-export function createAssignment(body: CreateAssignmentBody): Promise<AssignmentCreated> {
+export function createAssignment(body: CreateAssignmentBody): Promise<AssignmentDetail> {
   if (Date.parse(body.due_date) <= Date.parse(body.start_date)) {
     badRequest("due_date must be after start_date");
   }
@@ -136,11 +139,11 @@ export function createAssignment(body: CreateAssignmentBody): Promise<Assignment
     checkpoints: [0.33, 0.66],
   };
   db.assignments.push(assignment);
-  return clone({ ...assignment, join_url: `http://localhost:5173/join/${join_code}` });
+  return clone(assignmentDetail(assignment));
 }
 
-export function getAssignment(assignmentId: number): Promise<Assignment> {
-  return clone(findAssignment(assignmentId));
+export function getAssignment(assignmentId: number): Promise<AssignmentDetail> {
+  return clone(assignmentDetail(findAssignment(assignmentId)));
 }
 
 export function getOverview(assignmentId: number): Promise<Overview> {
@@ -148,25 +151,35 @@ export function getOverview(assignmentId: number): Promise<Overview> {
   const teams = db.teams
     .filter((t) => t.assignment_id === assignmentId)
     .map((team) => {
-      const openAlerts = visible(db.alerts).filter((a) => a.team_id === team.id && !a.resolved);
-      const open_disputes = visible(db.entries)
+      // RULES.md team health: amber = disputed entry. Alerts never count (teachers are never notified).
+      const disputed_entries = visible(db.entries)
         .filter((e) => e.team_id === team.id)
         .filter((e) => deriveStatus(e) === "disputed").length;
-      const teacher_alerts = openAlerts.filter((a) => a.level === "teacher");
-      let health: TeamHealth = "green";
-      if (teacher_alerts.length > 0) health = "red";
-      else if (openAlerts.some((a) => a.level === "team") || open_disputes > 0) health = "amber";
-      return { team, members: teamMembers(team.id), health, open_disputes, teacher_alerts };
+      const flagged_pastes = visible(db.pastes).filter((p) => p.team_id === team.id && p.flagged).length;
+      const health: TeamHealth = disputed_entries > 0 ? "amber" : "green";
+      return {
+        id: team.id,
+        name: team.name,
+        charter_locked: team.charter_locked,
+        member_count: teamMembers(team.id).length,
+        health,
+        disputed_entries,
+        flagged_pastes,
+      };
     });
-  return clone({ assignment, teams });
+  return clone({
+    assignment: { ...assignment, join_url: joinUrl(assignment.join_code) },
+    t: elapsedFraction(assignment),
+    teams,
+  });
 }
 
-export function getJoinInfo(joinCode: string): Promise<JoinInfo> {
+export function getJoinInfo(joinCode: string): Promise<AssignmentDetail> {
   const assignment = find(
     db.assignments.find((a) => a.join_code.toUpperCase() === joinCode.toUpperCase()),
     "Join code",
   );
-  return clone({ assignment, teams: db.teams.filter((t) => t.assignment_id === assignment.id) });
+  return clone(assignmentDetail(assignment));
 }
 
 // ---- Teams and charter ----
@@ -350,12 +363,13 @@ export function getContribution(teamId: number): Promise<ContributionReport> {
   return clone({ t, team_median: ratios.length > 0 ? teamMedian : null, members });
 }
 
-// Visibility per RULES.md. "teacher" sees teacher-level alerts only.
-export function listAlerts(teamId: number, viewer: Viewer): Promise<Alert[]> {
+// Visibility per RULES.md: team alerts for everyone in the team, private ones only
+// for the member they are about. The viewer must be in the team.
+export function listAlerts(teamId: number, viewerId: number): Promise<Alert[]> {
+  findTeam(teamId);
+  if (!teamMembers(teamId).some((m) => m.id === viewerId)) badRequest(`Member ${viewerId} is not in this team`);
   const rows = visible(db.alerts).filter((a) => a.team_id === teamId);
-  const canSee = (a: Alert) =>
-    viewer === "teacher" ? a.level === "teacher" : a.level !== "private" || a.member_id === viewer;
-  return clone(rows.filter(canSee));
+  return clone(rows.filter((a) => a.level === "team" || a.member_id === viewerId));
 }
 
 // ---- Demo ----
@@ -371,10 +385,11 @@ export function setDemoTime(value: string): Promise<DemoTime> {
 }
 
 // Reloads the Group 7 fixtures. This is not the backend demo story from phase B7.
-export function seedDemo(): Promise<Ok> {
+// Like the backend, returns the overview of assignment 1.
+export function seedDemo(): Promise<Overview> {
   db = freshDb();
   nowOverride = null;
-  return clone({ ok: true as const });
+  return getOverview(1);
 }
 
 export function resetDemo(): Promise<Ok> {

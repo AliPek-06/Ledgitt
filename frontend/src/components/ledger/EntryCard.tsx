@@ -37,7 +37,7 @@ export default function EntryCard({ entry, team, me, onReviewed }: Props) {
       setDisputing(false);
       onReviewed();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "That didn't go through. Please try again.");
+      setError(e instanceof ApiError ? e.message : "We couldn't save your review just now. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -90,7 +90,7 @@ export default function EntryCard({ entry, team, me, onReviewed }: Props) {
                   <span className="font-medium text-amber-800">{nameOf(r.reviewer_id)} disputed:</span> “{r.note}”
                 </span>
               )}
-              <span className="ml-2 text-sm text-stone-400">{formatDateTime(r.created_at)}</span>
+              <span className="ml-2 text-sm text-stone-500">{formatDateTime(r.created_at)}</span>
             </li>
           ))}
         </ul>

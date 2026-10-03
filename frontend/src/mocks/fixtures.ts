@@ -29,8 +29,8 @@ export const assignments: Assignment[] = [
   },
 ];
 
-// Groups 3 and 2 exist so the teacher dashboard shows all three health
-// colours: Group 7 amber (disputes), Group 3 red (teacher alert), Group 2 green.
+// Groups 3 and 2 exist so the teacher dashboard shows both health
+// colours: Group 7 amber (disputes), Group 3 and Group 2 green (alerts never reach the teacher).
 export const teams: Team[] = [
   { id: 1, assignment_id: 1, name: "Group 7", charter_locked: true },
   { id: 2, assignment_id: 1, name: "Group 3", charter_locked: true },
@@ -185,14 +185,14 @@ export const pasteEvents: PasteEvent[] = [
 export const alerts: Alert[] = [
   {
     id: 1, team_id: 1, member_id: SAM, checkpoint: 0.33, level: "private",
-    reason: "At the 33% checkpoint you had 0 confirmed points against about 3.8 expected from your charter.",
+    reason: "0 of 3.8 expected points confirmed",
     created_at: "2026-09-20T18:00:00Z", resolved: false,
   },
-  // Mocks don't run checkpoints, so this teacher-level alert is set directly
-  // to exercise the red state. In the real engine it needs a longer streak.
+  // Mocks don't run checkpoints, so this team-level alert is set directly to
+  // exercise the team banner. In the real engine it needs a streak of 2 (66%).
   {
-    id: 2, team_id: 2, member_id: BEN, checkpoint: 0.33, level: "teacher",
-    reason: "No confirmed work yet, and well behind the plan for this stage.",
+    id: 2, team_id: 2, member_id: BEN, checkpoint: 0.33, level: "team",
+    reason: "0 of 3.8 expected points confirmed",
     created_at: "2026-09-20T18:00:00Z", resolved: false,
   },
 ];

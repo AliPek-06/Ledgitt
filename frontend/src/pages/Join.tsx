@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ApiError, createTeam, getJoinInfo, joinTeam } from "../api/client";
-import type { JoinInfo, Team } from "../api/types";
+import type { AssignmentDetail, Team } from "../api/types";
 import { useCurrentUser } from "../context/CurrentUserContext";
 import { formatDateRange } from "../lib/format";
 
@@ -12,7 +12,7 @@ export default function Join() {
   const navigate = useNavigate();
   const { setCurrentUser } = useCurrentUser();
 
-  const [info, setInfo] = useState<JoinInfo | null>(null);
+  const [info, setInfo] = useState<AssignmentDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [choice, setChoice] = useState<number | typeof NEW_TEAM | null>(null);
   const [newTeamName, setNewTeamName] = useState("");
@@ -49,7 +49,7 @@ export default function Join() {
     try {
       let team: Team;
       if (choice === NEW_TEAM) {
-        team = await createTeam(info.assignment.id, newTeamName.trim());
+        team = await createTeam(info.id, newTeamName.trim());
       } else {
         team = info.teams.find((t) => t.id === choice)!;
       }
@@ -57,15 +57,16 @@ export default function Join() {
       setCurrentUser(member.id);
       navigate(team.charter_locked ? `/team/${team.id}` : `/team/${team.id}/charter`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setError(err instanceof ApiError ? err.message : "We couldn't add you to the team just now. Please try again.");
       setSubmitting(false);
     }
   }
 
   if (loadError) return <p className="mx-auto max-w-xl rounded-lg bg-amber-50 px-5 py-4 text-amber-900">{loadError}</p>;
-  if (!info) return <p className="text-stone-500">Loading…</p>;
+  if (!info) return <p className="text-stone-500">Loading the assignment…</p>;
 
-  const { assignment, teams } = info;
+  const assignment = info;
+  const { teams } = info;
   const canSubmit = name.trim() !== "" && choice !== null && (choice !== NEW_TEAM || newTeamName.trim() !== "");
 
   return (

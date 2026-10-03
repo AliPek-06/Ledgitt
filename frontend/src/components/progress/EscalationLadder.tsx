@@ -40,7 +40,8 @@ export default function EscalationLadder({ alerts, members, viewerId }: Props) {
                 <span className="rounded-full bg-emerald-50 px-3 py-1 font-medium text-emerald-900">✓ Back on track</span>
               ) : (
                 <span className="text-stone-500">
-                  Flagged at {open.map((a) => formatPct(a.checkpoint)).join(" and ")}
+                  Behind at the {open.map((a) => formatPct(a.checkpoint)).join(" and ")} check-in
+                  {open.length > 1 ? "s" : ""}
                 </span>
               )}
             </div>
@@ -55,7 +56,7 @@ export default function EscalationLadder({ alerts, members, viewerId }: Props) {
                     {i > 0 && <div className={`h-1 w-6 shrink-0 ${hit ? "bg-stone-500" : "bg-stone-200"}`} aria-hidden />}
                     <div
                       className={`flex-1 rounded-lg border-2 px-4 py-3 ${
-                        hit ? tone : "border-stone-200 bg-white text-stone-400"
+                        hit ? tone : "border-stone-200 bg-white text-stone-500"
                       } ${current ? "shadow-sm" : ""}`}
                       aria-current={current ? "step" : undefined}
                     >
@@ -78,7 +79,8 @@ export default function EscalationLadder({ alerts, members, viewerId }: Props) {
 
             {backOnTrack && (
               <p className="mt-4 text-stone-600">
-                {aboutMe ? "You were" : `${name} was`} flagged at {mine.map((a) => formatPct(a.checkpoint)).join(" and ")}, and
+                {aboutMe ? "You were" : `${name} was`} a bit behind at the{" "}
+                {mine.map((a) => formatPct(a.checkpoint)).join(" and ")} check-in{mine.length > 1 ? "s" : ""}, and
                 {aboutMe ? " you're" : " is"} now keeping up with the plan.
               </p>
             )}

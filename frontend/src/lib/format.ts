@@ -26,8 +26,11 @@ export function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
+// Rounds down, so "33%" only shows once t has really reached the 0.33 checkpoint
+// (rounding to nearest showed "33%" from 32.5% on, before any alert could fire).
+// The epsilon absorbs float error, e.g. 0.57 * 100 = 56.99999999999999.
 export function formatPct(fraction: number): string {
-  return `${Math.round(fraction * 100)}%`;
+  return `${Math.floor(fraction * 100 + 1e-9)}%`;
 }
 
 // The calendar date at a fraction (0..1) of the project timeline, e.g. "21 Sep".

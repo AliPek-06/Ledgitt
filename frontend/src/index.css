@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* Design direction (build guide F0): neutral base, one calm deep-teal accent.
-   Green = on track, amber = needs attention, red only for teacher-level alerts. */
+   Green = on track, amber = needs attention, no red: alerts never reach the teacher. */
 @theme {
   --color-accent: #0f5e5b;
   --color-accent-strong: #0b4744;

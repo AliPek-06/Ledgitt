@@ -98,7 +98,7 @@ export default function TeamCharter() {
     try {
       applyTeam(await saveCharter(teamId, toInputs(rows)));
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Saving failed. Please try again.");
+      setError(e instanceof ApiError ? e.message : "We couldn't save the charter just now. Please try again.");
       // A teammate may have locked the charter meanwhile; pick that up.
       getTeam(teamId)
         .then((t) => t.charter_locked && applyTeam(t))
@@ -115,7 +115,7 @@ export default function TeamCharter() {
       applyTeam(await lockCharter(teamId));
       setConfirmLock(false);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Locking failed. Please try again.");
+      setError(e instanceof ApiError ? e.message : "We couldn't lock the charter just now. Please try again.");
       setConfirmLock(false);
     } finally {
       setBusy(false);

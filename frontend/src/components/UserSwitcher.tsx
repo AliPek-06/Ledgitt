@@ -4,6 +4,28 @@ import { getTeam } from "../api/client";
 import type { Member } from "../api/types";
 import { useCurrentUser } from "../context/CurrentUserContext";
 
+// Names of members seen on earlier team pages, so a stored member id can still be
+// shown by name on pages without a team (e.g. /teacher/new). Per-browser only.
+const NAMES_KEY = "ledger.memberNames";
+
+function loadNames(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(NAMES_KEY) ?? "{}");
+  } catch {
+    return {};
+  }
+}
+
+function rememberNames(members: Member[]): void {
+  try {
+    const names = loadNames();
+    for (const m of members) names[m.id] = m.name;
+    localStorage.setItem(NAMES_KEY, JSON.stringify(names));
+  } catch {
+    // Storage unavailable; fall back to "Member #id".
+  }
+}
+
 // Lists the members of the team in the current URL (if any) plus "Teacher".
 export default function UserSwitcher() {
   const { teamId } = useParams();
@@ -17,7 +39,11 @@ export default function UserSwitcher() {
     }
     let cancelled = false;
     getTeam(Number(teamId))
-      .then((team) => !cancelled && setMembers(team.members))
+      .then((team) => {
+        if (cancelled) return;
+        rememberNames(team.members);
+        setMembers(team.members);
+      })
       .catch(() => !cancelled && setMembers([]));
     return () => {
       cancelled = true;
@@ -44,7 +70,7 @@ export default function UserSwitcher() {
             {m.name}
           </option>
         ))}
-        {!known && <option value={currentUser}>Member #{currentUser}</option>}
+        {!known && <option value={currentUser}>{loadNames()[currentUser] ?? `Member #${currentUser}`}</option>}
       </select>
     </label>
   );

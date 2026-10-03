@@ -56,10 +56,9 @@ Computed per member, at time `t`.
 
 ## Team health (overview)
 
-- **red**: any open (unresolved) `team` alert.
-- **amber**: otherwise, any disputed entry.
+- **amber**: any disputed entry.
 - **green**: otherwise.
-- Private alerts never affect health, so they stay private.
+- Teachers are never notified: no alert, private or team, affects health or appears on the overview.
 
 ## Paste detection
 

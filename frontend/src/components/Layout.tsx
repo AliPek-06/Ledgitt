@@ -25,7 +25,9 @@ export default function Layout() {
           </div>
           <UserSwitcher />
         </header>
-        <main className="mx-auto max-w-6xl px-8 py-10">
+        {/* Bottom padding leaves room to scroll any content clear of the fixed demo
+            panel (bottom right), e.g. the "Label it" button on a 720px projector. */}
+        <main className="mx-auto max-w-6xl px-8 pt-10 pb-80">
           <Outlet />
         </main>
       </div>

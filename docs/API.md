@@ -99,7 +99,7 @@ One shared document per team.
 | `content_html` | string | |
 | `content_text` | string | |
 | `updated_at` | datetime | |
-| `updated_by` | int | Member id |
+| `updated_by` | int \| null | Member id; `null` until the document is first saved |
 
 ### PasteEvent
 
@@ -126,8 +126,8 @@ One shared document per team.
 | `member_id` | int | |
 | `checkpoint` | float | |
 | `level` | `"private"` \| `"team"` | Streak 1 = private, 2+ = team |
-| `reason` | string | |
-| `created_at` | datetime | |
+| `reason` | string | Human-readable, e.g. `"0 of 3.8 expected points confirmed"`. The checkpoint is not repeated here; it is in `checkpoint` |
+| `created_at` | datetime | The checkpoint's moment |
 | `resolved` | bool | |
 
 ### Contribution
@@ -250,12 +250,9 @@ Append-only. There are no update or delete endpoints for entries or reviews.
 | GET | `/api/assignments/{id}/overview` | | `{assignment, t, teams: TeamHealth[]}` |
 
 - `assignment` = [Assignment](#assignment) fields + `join_url`.
-- **TeamHealth** = `{id, name, charter_locked, member_count, health, open_team_alerts, disputed_entries, flagged_pastes}`.
-- `health` (see RULES.md):
-  - `red` if any open `team` alert
-  - `amber` if any disputed entry
-  - otherwise `green`
-- Private alerts never count towards `health`.
+- **TeamHealth** = `{id, name, charter_locked, member_count, health, disputed_entries, flagged_pastes}`.
+- `health` (see RULES.md): `amber` if any disputed entry, otherwise `green`.
+- Teachers are never notified: alerts never affect `health` and are not returned here.
 - Counts only include records with `created_at <= now`. Due checkpoints are run for each team first.
 
 ### Demo time

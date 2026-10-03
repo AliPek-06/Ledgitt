@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { getAssignment, getContribution, listAlerts } from "../../api/client";
-import type { Alert, Assignment, Contribution, Member, TeamDetail } from "../../api/types";
+import type { Alert, Assignment, Member, TeamDetail } from "../../api/types";
 import { usePolling } from "../../hooks/usePolling";
 import { dateAtPct, formatPct } from "../../lib/format";
-import { STATUS, formatPoints } from "../../lib/progress";
+import { type DisplayContribution, STATUS, displayStatus, formatPoints } from "../../lib/progress";
 import ContributionChart from "./ContributionChart";
 import EscalationLadder from "./EscalationLadder";
 import ProgressTimeline from "./ProgressTimeline";
@@ -19,6 +19,7 @@ const NO_ALERTS: Alert[] = [];
 
 export default function ProgressTab({ team, me }: Props) {
   const [assignment, setAssignment] = useState<Assignment | null>(null);
+  const [assignmentError, setAssignmentError] = useState(false);
   const { data: report, error } = usePolling(() => getContribution(team.id), [team.id]);
   const { data: alerts } = usePolling(
     () => (me ? listAlerts(team.id, me.id) : Promise.resolve(NO_ALERTS)),
@@ -29,17 +30,25 @@ export default function ProgressTab({ team, me }: Props) {
     let cancelled = false;
     getAssignment(team.assignment_id)
       .then((a) => !cancelled && setAssignment(a))
-      .catch(() => {});
+      .catch(() => !cancelled && setAssignmentError(true));
     return () => {
       cancelled = true;
     };
   }, [team.assignment_id]);
 
   if (!report || !assignment) {
-    return <p className="text-stone-500">{error ? "We couldn't load progress." : "Loading progress…"}</p>;
+    return (
+      <p className="text-stone-500">
+        {error || assignmentError ? "We couldn't load progress just now. Please try again." : "Loading progress…"}
+      </p>
+    );
   }
 
   const visibleAlerts = alerts ?? NO_ALERTS;
+  const rows: DisplayContribution[] = report.members.map((m) => ({
+    ...m,
+    status: displayStatus(m, me?.id, visibleAlerts),
+  }));
   const next = assignment.checkpoints.find((c) => c > report.t);
   const totalDays = Math.round((Date.parse(assignment.due_date) - Date.parse(assignment.start_date)) / 86_400_000);
   const day = Math.min(totalDays, Math.max(0, Math.round(report.t * totalDays)));
@@ -84,10 +93,18 @@ export default function ProgressTab({ team, me }: Props) {
         <p className="mt-1 text-stone-600">
           Points each person's charter expects by now, next to the points teammates have confirmed.
         </p>
-        <div className="mt-6">
-          <ContributionChart members={report.members} viewerId={me?.id} />
-        </div>
-        <ContributionTable members={report.members} viewerId={me?.id} />
+        {rows.length === 0 ? (
+          <p className="mt-6 rounded-lg bg-stone-50 px-5 py-4 text-stone-600">
+            No members yet. Progress shows up once people join and agree a charter.
+          </p>
+        ) : (
+          <>
+            <div className="mt-6">
+              <ContributionChart members={rows} viewerId={me?.id} />
+            </div>
+            <ContributionTable members={rows} viewerId={me?.id} />
+          </>
+        )}
       </section>
 
       {/* Escalation ladder */}
@@ -105,7 +122,7 @@ export default function ProgressTab({ team, me }: Props) {
 }
 
 // The table view of the chart: every value readable without hovering.
-function ContributionTable({ members, viewerId }: { members: Contribution[]; viewerId?: number }) {
+function ContributionTable({ members, viewerId }: { members: DisplayContribution[]; viewerId?: number }) {
   return (
     <table className="mt-8 w-full text-left text-lg">
       <thead className="border-b border-stone-200 text-base text-stone-500">

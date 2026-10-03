@@ -140,7 +140,7 @@ export default function DemoPanel({ onDataReplaced }: Props) {
   return (
     <aside
       aria-label="Demo controls"
-      className="fixed bottom-4 right-4 z-40 w-80 rounded-xl border border-stone-200 bg-white/95 text-sm text-stone-700 shadow-lg backdrop-blur"
+      className="fixed bottom-4 right-4 z-40 w-[22rem] rounded-xl border border-stone-200 bg-white/95 text-sm text-stone-700 shadow-lg backdrop-blur"
     >
       <div className="flex items-center justify-between px-4 py-2">
         <button

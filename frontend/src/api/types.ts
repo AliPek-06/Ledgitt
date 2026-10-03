@@ -77,7 +77,7 @@ export interface Document {
   content_html: string;
   content_text: string;
   updated_at: ISODateTime;
-  updated_by: number;
+  updated_by: number | null; // null until someone first saves
 }
 
 export type PasteKind = "paste" | "burst";
@@ -97,7 +97,7 @@ export interface PasteEvent {
   created_at: ISODateTime;
 }
 
-export type AlertLevel = "private" | "team" | "teacher";
+export type AlertLevel = "private" | "team";
 
 export interface Alert {
   id: number;
@@ -131,12 +131,10 @@ export interface ContributionReport {
 
 // ---- Response shapes ----
 
-export interface AssignmentCreated extends Assignment {
+// API.md: AssignmentDetail = Assignment fields + join_url + teams. Returned by
+// POST /assignments, GET /assignments/{id} and GET /join/{join_code}.
+export interface AssignmentDetail extends Assignment {
   join_url: string;
-}
-
-export interface JoinInfo {
-  assignment: Assignment;
   teams: Team[];
 }
 
@@ -145,18 +143,23 @@ export interface TeamDetail extends Team {
   charter_items: CharterItem[];
 }
 
-export type TeamHealth = "green" | "amber" | "red";
+// Alerts never affect health: teachers are never notified (RULES.md).
+export type TeamHealth = "green" | "amber";
 
+// API.md: TeamHealth row of GET /assignments/{id}/overview.
 export interface TeamOverview {
-  team: Team;
-  members: Member[];
+  id: number;
+  name: string;
+  charter_locked: boolean;
+  member_count: number;
   health: TeamHealth;
-  open_disputes: number;
-  teacher_alerts: Alert[];
+  disputed_entries: number;
+  flagged_pastes: number;
 }
 
 export interface Overview {
-  assignment: Assignment;
+  assignment: Assignment & { join_url: string };
+  t: number;
   teams: TeamOverview[];
 }
 
@@ -219,5 +222,3 @@ export interface LabelPasteBody {
   label_note: string;
 }
 
-// Alerts are requested as a member id or "teacher".
-export type Viewer = number | "teacher";

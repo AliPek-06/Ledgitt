@@ -32,7 +32,7 @@ export default function LabelPasteModal({ paste, me, onLabelled, onClose }: Prop
       await labelPaste(paste.id, { member_id: me.id, label, label_note: note.trim() });
       onLabelled();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "That didn't save. Please try again.");
+      setError(e instanceof ApiError ? e.message : "We couldn't save the label just now. Please try again.");
       setBusy(false);
     }
   }
