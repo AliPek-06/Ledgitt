@@ -11,6 +11,7 @@ import type {
   AssignmentCreated,
   CharterItemInput,
   Contribution,
+  ContributionReport,
   CreateAssignmentBody,
   CreateEntryBody,
   CreatePasteBody,
@@ -309,7 +310,7 @@ export function listPastes(teamId: number): Promise<PasteEvent[]> {
 
 // ---- Progress ----
 
-export function getContribution(teamId: number): Promise<Contribution[]> {
+export function getContribution(teamId: number): Promise<ContributionReport> {
   const t = elapsedFraction(findAssignment(findTeam(teamId).assignment_id));
   const entries = visible(db.entries).filter((e) => e.team_id === teamId);
 
@@ -326,11 +327,11 @@ export function getContribution(teamId: number): Promise<Contribution[]> {
     return { m, expected, actual };
   });
 
-  const teamMedian = median(rows.filter((r) => r.expected >= 1).map((r) => r.actual / r.expected));
+  const ratios = rows.filter((r) => r.expected >= 1).map((r) => r.actual / r.expected);
+  const teamMedian = median(ratios);
 
-  return clone(
-    rows.map(({ m, expected, actual }): Contribution => {
-      const progress_ratio = expected > 0 ? actual / expected : null;
+  const members = rows.map(({ m, expected, actual }): Contribution => {
+      const progress_ratio = expected >= 1 ? actual / expected : null;
       let status: Contribution["status"] = "not_started_yet";
       if (expected >= 1) {
         const ratio = actual / expected;
@@ -345,8 +346,8 @@ export function getContribution(teamId: number): Promise<Contribution[]> {
         progress_ratio,
         status,
       };
-    }),
-  );
+    });
+  return clone({ t, team_median: ratios.length > 0 ? teamMedian : null, members });
 }
 
 // Visibility per RULES.md. "teacher" sees teacher-level alerts only.

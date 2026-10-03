@@ -8,7 +8,7 @@ import type {
   Assignment,
   AssignmentCreated,
   CharterItemInput,
-  Contribution,
+  ContributionReport,
   CreateAssignmentBody,
   CreateEntryBody,
   CreatePasteBody,
@@ -147,7 +147,7 @@ export async function listPastes(teamId: number): Promise<PasteEvent[]> {
 
 // ---- Progress ----
 
-export async function getContribution(teamId: number): Promise<Contribution[]> {
+export async function getContribution(teamId: number): Promise<ContributionReport> {
   if (USE_MOCKS) return mock.getContribution(teamId);
   return request("GET", `/teams/${teamId}/contribution`);
 }

@@ -112,6 +112,7 @@ export interface Alert {
 
 export type ContributionStatus = "on_track" | "behind" | "not_started_yet";
 
+// progress_ratio is null when expected_points < 1 (API.md).
 export interface Contribution {
   member_id: number;
   name: string;
@@ -119,6 +120,13 @@ export interface Contribution {
   actual_points: number;
   progress_ratio: number | null;
   status: ContributionStatus;
+}
+
+// GET /teams/{id}/contribution. team_median is null when nobody has expected >= 1.
+export interface ContributionReport {
+  t: number;
+  team_median: number | null;
+  members: Contribution[];
 }
 
 // ---- Response shapes ----

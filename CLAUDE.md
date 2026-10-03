@@ -242,3 +242,34 @@ directly with fixed timestamps and sets the clock to t=0.20.
 private/future) and test_team_health; 164 tests total.
 - Docs: API.md has Overview and demo reset/seed. RULES.md has a Team health section.
 README shows how to seed.
+### 2026-10-03 - Phase F6: progress dashboard
+- Adapted to the current rules (user dropped the teacher level; RULES.md/API.md):
+  the ladder has two steps (private nudge -> team heads-up), and checkpoint markers
+  come from assignment.checkpoints (0.33/0.66), not a fixed 25/50/75.
+- Aligned GET /teams/{id}/contribution with API.md: frontend type ContributionReport
+  {t, team_median, members}; progress_ratio null when expected < 1. Client and mock
+  updated. Other client/API.md mismatches are still left for I1.
+- Added recharts 3.10 (in the stack). Progress tab is lazy-loaded (own chunk).
+- src/components/progress/:
+  - ProgressTab: hero "% of project time passed · day X of Y", next check-in,
+    timeline, chart + table, ladder. Polls contribution and alerts every 3s.
+    Alerts are only fetched for team members (API.md: viewer_id must be in the team);
+    teacher/non-members see the chart and a "members only" note.
+  - ContributionChart (Recharts): per member, planned-by-now (neutral #d6d3d1) vs
+    confirmed (status palette: on track #0ca30c, behind #fab219, not started
+    #78716c). Per dataviz skill: <=24px bars, 4px rounded tops, 2px gap, hairline
+    solid grid, legend, value labels only on confirmed bars, hover tooltip, and a
+    table view with icon + label per status. minPointSize=3 so a 0 still shows as a
+    stub in its status colour.
+  - ProgressTimeline: elapsed fill, checkpoint ticks + dates, "Now" tag, and alert
+    pills under the checkpoint where each alert happened (private teal, team amber,
+    resolved grey with ✓).
+  - EscalationLadder: one card per member with visible alerts; reached step = highest
+    level among open alerts; all resolved -> "✓ Back on track".
+- lib/progress.ts: status meta, ladder steps, formatPoints.
+- Verified in headless Edge against mocks (incl. an injected later-project scenario
+  with a resolved and a team-level alert): visibility per viewer (Sam/Maya/Jordan/
+  Teacher), chart + table values, live update via polling after confirmations,
+  ladder states, tooltip, no console errors. Screenshots checked.
+- Open: no dark mode anywhere in the app (light only). Mock alerts are fixtures; the
+  mock does not run checkpoint evaluation.

@@ -8,6 +8,8 @@ import { usePolling } from "../hooks/usePolling";
 
 // The editor (TipTap) is large, so it only loads when the Document tab opens.
 const DocumentTab = lazy(() => import("../components/document/DocumentTab"));
+// Same for the charts (Recharts) on the Progress tab.
+const ProgressTab = lazy(() => import("../components/progress/ProgressTab"));
 
 const TABS = [
   { id: "ledger", label: "Ledger" },
@@ -79,7 +81,11 @@ export default function TeamWorkspace() {
             <DocumentTab team={team} me={me} />
           </Suspense>
         )}
-        {tab === "progress" && <p className="text-stone-500">The progress dashboard arrives in phase F6.</p>}
+        {tab === "progress" && (
+          <Suspense fallback={<p className="text-stone-500">Loading progress…</p>}>
+            <ProgressTab team={team} me={me} />
+          </Suspense>
+        )}
       </div>
     </section>
   );
