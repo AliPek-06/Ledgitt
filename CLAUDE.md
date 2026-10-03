@@ -82,3 +82,23 @@ Marked "B6" where checkpoint evaluation must be hooked in.
   - No duplicate-name check on members.
   - Adding members is not blocked when the charter is locked.
   - API.md model section still has the stale "teacher" level and checkpoint default.
+### 2026-10-03 - Phase B3: charter
+- app/routers/charter.py:
+  - PUT /api/teams/{id}/charter takes {items: [...]} and replaces the whole charter
+  (old rows deleted, so ids change). It returns TeamDetail.
+  - POST /api/teams/{id}/charter/lock returns TeamDetail.
+- Validation returns 400, checked in the router, not Pydantic, so it isn't 422.
+The detail message names the item ("Charter item N: ..."). Rules:
+  - 0 <= start_pct < end_pct <= 1
+  - planned_points > 0
+  - responsibility not blank
+  - member_id belongs to the team
+  - PUT is rejected when locked
+  - If any item is invalid, nothing is saved.
+- Lock: 400 if the charter is empty or already locked. There is no unlock.
+- app/routers/teams.py: team_detail() helper. GET /api/teams/{id} now includes
+charter_items.
+- app/schemas.py: CharterItemIn, CharterIn, CharterItemOut;
+TeamDetailOut.charter_items.
+- tests/test_charter.py covers every rule; 47 tests total.
+- docs/API.md has a Charter section.

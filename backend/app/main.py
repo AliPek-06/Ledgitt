@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.db import create_db_and_tables
-from app.routers import assignments, demo, teams
+from app.routers import assignments, charter, demo, teams
 
 
 @asynccontextmanager
@@ -25,6 +25,7 @@ app.add_middleware(
 
 app.include_router(assignments.router)
 app.include_router(teams.router)
+app.include_router(charter.router)
 app.include_router(demo.router)
 
 

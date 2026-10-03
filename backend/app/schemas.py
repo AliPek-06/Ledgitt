@@ -55,8 +55,27 @@ class AssignmentOut(BaseModel):
     teams: list[TeamOut]
 
 
+class CharterItemIn(BaseModel):
+    # Range rules are checked in the charter router so they return 400.
+    member_id: int
+    responsibility: str
+    planned_points: int
+    start_pct: float
+    end_pct: float
+
+
+class CharterIn(BaseModel):
+    items: list[CharterItemIn]
+
+
+class CharterItemOut(CharterItemIn):
+    id: int
+    team_id: int
+
+
 class TeamDetailOut(TeamOut):
     members: list[MemberOut]
+    charter_items: list[CharterItemOut]
 
 
 class DemoTimeIn(BaseModel):

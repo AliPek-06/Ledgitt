@@ -163,7 +163,23 @@ Computed per member, not stored.
 
 - `POST /api/assignments`: `due_date` must be after `start_date`. `checkpoints` are optional, each must be strictly between 0 and 1, and they are stored sorted. The server generates a 6-character `join_code` from `A–Z` and `2–9`, leaving out the look-alike characters `0`, `O`, `1` and `I`.
 - **AssignmentDetail** = [Assignment](#assignment) fields + `join_url` (`http://localhost:5173/join/{join_code}`) + `teams: Team[]`.
-- **TeamDetail** = [Team](#team) fields + `members: Member[]`.
+- **TeamDetail** = [Team](#team) fields + `members: Member[]` + `charter_items: CharterItem[]`.
+
+### Charter
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| PUT | `/api/teams/{id}/charter` | `{items: [{member_id, responsibility, planned_points, start_pct, end_pct}]}` | TeamDetail |
+| POST | `/api/teams/{id}/charter/lock` | | TeamDetail |
+
+- PUT replaces the whole charter. Replaced items get new ids.
+- Rule violations return `400` with a `detail` message such as `"Charter item 2: planned_points must be greater than 0"`. If any item is invalid, nothing is saved. The rules:
+  - `0 <= start_pct < end_pct <= 1`
+  - `planned_points > 0`
+  - `responsibility` is not blank
+  - `member_id` belongs to this team
+  - the charter is not locked
+- Lock returns `400` if the charter is empty or already locked. A locked charter cannot be unlocked.
 
 ### Demo time
 
