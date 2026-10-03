@@ -159,3 +159,49 @@ calculation (later phase).
 - Paste events are not append-only: a label can be changed again.
 - tests/test_documents.py; 105 tests total. docs/API.md has a "Document and pastes"
 section.
+### 2026-10-03 - Phase B6: early warnings (contribution, checkpoints, alerts)
+- app/services/warnings.py (pure, no DB/clock):
+  - SIZE_POINTS = S1/M2/L4
+  - elapsed_fraction, expected_points
+  - contribution_rows(members, charter_items, entries, t), where entries are
+  EntryPoints(member_id, size, status)
+  - is_behind(row, team_median), team_median(rows), next_level(streak):
+  1 = private, 2+ = team
+  - Contribution dataclass: member_id, name, expected_points, actual_points,
+  progress_ratio (None if expected < 1), status
+  (not_started_yet | behind | on_track)
+- app/services/checkpoints.py (DB):
+  - team_contribution(session, team, t, cutoff) builds rows from records with
+  created_at <= cutoff. Status is computed from reviews up to the cutoff.
+  - evaluate_due_checkpoints(session, team_id):
+    - Only runs for locked charters. Takes checkpoints in order where t_now >= c and
+    no EvaluatedCheckpoint row exists.
+    - Each checkpoint is judged at t = c with cutoff = checkpoint datetime.
+    - Behind: streak += 1 and an Alert is created (created_at = checkpoint datetime).
+    - Not behind: streak = 0 and the member's open alerts are resolved.
+    - Commits per checkpoint.
+  - evaluate_all_teams(session) is called by POST /api/demo/time.
+  - A charter locked after checkpoints passed gets them evaluated retroactively on
+  the next call.
+- app/routers/warnings.py: both endpoints evaluate first.
+  - GET /api/teams/{id}/contribution -> {t, team_median, members}
+  - GET /api/teams/{id}/alerts?viewer_id= -> team alerts + the viewer's own private
+  alerts, created_at <= now, newest first, resolved ones included. viewer_id is
+  required; 400 if not in the team.
+- No teacher level anywhere (the user confirmed teacher was dropped).
+- Pylance fix: use sqlmodel col() for .desc()/.in_() and filter Optional ids from
+select(X.id).
+- Tests:
+  - tests/test_warnings.py: table-driven pure tests.
+  - tests/test_checkpoints.py: scenarios through demo time (uneven charter, zero-work,
+  stalls, escalation 1/2/3, recovery, streak reset, evaluated once, multi-checkpoint
+  jump, unlocked charter, visibility, contribution).
+  - 155 tests total.
+- Known limitation: moving demo time backwards does not undo evaluations. Streaks,
+EvaluatedCheckpoint and resolved flags stay; alerts still hide by created_at.
+- No overview endpoint exists yet. When it is built, it must call
+evaluate_due_checkpoints first.
+- API.md:
+  - Contribution model completed; "Contribution and alerts" section added.
+  - The model section still says Alert.level may be "teacher" and the checkpoint
+  default is [0.25, 0.5, 0.75]. Both are stale.

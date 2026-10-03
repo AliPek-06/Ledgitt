@@ -140,7 +140,8 @@ Computed per member, not stored.
 | `name` | string | |
 | `expected_points` | float | |
 | `actual_points` | float | |
-| `p…` | | **TODO: contract was truncated here.** Likely `progress_ratio` and a status (`"not_started_yet"` / behind / on track); confirm. |
+| `progress_ratio` | float \| null | `actual / expected`; `null` when `expected_points < 1` |
+| `status` | `"not_started_yet"` \| `"behind"` \| `"on_track"` | See RULES.md |
 
 ## Endpoints
 
@@ -227,6 +228,21 @@ Append-only. There are no update or delete endpoints for entries or reviews.
   - Labelling sets `flagged = false`.
   - A paste that doesn't exist or is hidden by demo time returns `404`.
 
+### Contribution and alerts
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/api/teams/{id}/contribution` | | `{t, team_median, members: Contribution[]}` |
+| GET | `/api/teams/{id}/alerts?viewer_id={member_id}` | | [Alert](#alert)[], newest first |
+
+- Both endpoints first run any checkpoints that are due (see RULES.md). `POST /api/demo/time` also runs them for every team.
+- Contribution is computed at the current `t` from entries and reviews with `created_at <= now`. `team_median` is `null` when no member has `expected_points >= 1`.
+- Alerts:
+  - `viewer_id` is required (`422` if missing) and must be a member of the team (`400` otherwise).
+  - The viewer sees `team` alerts plus `private` alerts about themselves.
+  - Only alerts with `created_at <= now` are returned. An alert's `created_at` is the moment of its checkpoint.
+  - Resolved alerts are included, with `resolved: true`.
+
 ### Demo time
 
 | Method | Path | Body | Response |
@@ -235,4 +251,4 @@ Append-only. There are no update or delete endpoints for entries or reviews.
 | POST | `/api/demo/time` | `{now: datetime \| null}` | `{now, overridden}` |
 
 - `now: null` clears the override and returns to real UTC time.
-- Due checkpoint evaluation will run here from phase B6.
+- After changing the time, runs due checkpoint evaluation for every team with a locked charter.
