@@ -78,6 +78,49 @@ class TeamDetailOut(TeamOut):
     charter_items: list[CharterItemOut]
 
 
+class EvidenceIn(BaseModel):
+    kind: str  # "url" | "file" | "doc_activity" | "commit"
+    ref: str
+    label: str = ""
+
+
+class EntryCreate(BaseModel):
+    # Allowed values are checked in the ledger router so they return 400.
+    member_id: int
+    description: str
+    size: str  # "S" | "M" | "L"
+    charter_item_id: Optional[int] = None
+    evidence: list[EvidenceIn] = Field(default_factory=list)
+
+
+class ReviewCreate(BaseModel):
+    reviewer_id: int
+    verdict: str  # "confirm" | "dispute"
+    note: str = ""
+
+
+class ReviewOut(BaseModel):
+    id: int
+    entry_id: int
+    reviewer_id: int
+    verdict: str
+    note: str
+    created_at: datetime
+
+
+class EntryOut(BaseModel):
+    id: int
+    team_id: int
+    member_id: int
+    description: str
+    size: str
+    charter_item_id: Optional[int]
+    evidence: list[EvidenceIn]
+    created_at: datetime
+    status: str  # "pending" | "confirmed" | "disputed"
+    reviews: list[ReviewOut]
+
+
 class DemoTimeIn(BaseModel):
     now: Optional[datetime]  # null clears the override
 

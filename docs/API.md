@@ -181,6 +181,31 @@ Computed per member, not stored.
   - the charter is not locked
 - Lock returns `400` if the charter is empty or already locked. A locked charter cannot be unlocked.
 
+### Ledger
+
+Append-only. There are no update or delete endpoints for entries or reviews.
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| POST | `/api/teams/{id}/entries` | `{member_id, description, size, charter_item_id?, evidence?: [{kind, ref, label?}]}` | `201` [Entry](#entry) |
+| GET | `/api/teams/{id}/entries` | | [Entry](#entry)[], newest first |
+| POST | `/api/entries/{id}/reviews` | `{reviewer_id, verdict, note?}` | `201` the updated [Entry](#entry) |
+
+- `created_at` is always set by the server from the clock. Clients never send it.
+- GET hides entries with `created_at > now`. Each entry includes only reviews with `created_at <= now`, and `status` is computed from those reviews, so moving demo time back replays the history.
+- Entry rules (`400` on violation):
+  - `member_id` is in the team
+  - `description` is not blank
+  - `size` is `S`, `M` or `L`
+  - each evidence item has a valid `kind` and a non-blank `ref`
+  - `charter_item_id`, if given, belongs to the team, and the charter must be locked
+- Review rules (`400` on violation):
+  - the reviewer is in the entry's team and is not the author
+  - `verdict` is `confirm` or `dispute`
+  - a dispute needs a non-blank `note`
+  - one review per reviewer per entry, ever. Reviews that are hidden by demo time still count.
+- Reviewing an entry that doesn't exist or is hidden by demo time returns `404`.
+
 ### Demo time
 
 | Method | Path | Body | Response |

@@ -102,3 +102,37 @@ charter_items.
 TeamDetailOut.charter_items.
 - tests/test_charter.py covers every rule; 47 tests total.
 - docs/API.md has a Charter section.
+### 2026-10-03 - Phase B4: ledger
+- app/services/status.py: pure entry_status(verdicts, team_size) and
+confirms_needed(team_size) = ceil((team_size - 1) / 2). A 1-person team needs 0
+confirms, so its entries are confirmed straight away.
+- app/routers/ledger.py (append-only, GET/POST only):
+  - POST /api/teams/{id}/entries
+  - GET /api/teams/{id}/entries (newest first)
+  - POST /api/entries/{id}/reviews (returns the updated entry)
+- created_at always comes from clock.now().
+- Time filtering:
+  - Entries with created_at > now are hidden.
+  - Reviews with created_at > now are hidden too, and status is computed only from
+  visible reviews.
+  - Team size = current member count (members have no created_at).
+- Entry rules (all 400):
+  - member in team, description not blank, size S/M/L
+  - evidence kind valid and ref not blank
+  - charter_item_id in the team, and only allowed once the charter is locked, because
+  PUT replaces item ids
+- Review rules (all 400):
+  - reviewer in team, not the author
+  - verdict is confirm/dispute
+  - a dispute needs a note
+  - one review per reviewer per entry, checked against all reviews including hidden
+  ones
+- Reviewing a hidden or unknown entry returns 404.
+- Tests:
+  - tests/test_status.py: unit tests for the pure function.
+  - tests/test_ledger.py: endpoints, rejections, time travel, and a check that no
+  PUT/PATCH/DELETE routes exist for entries/reviews.
+  - 81 tests total.
+- docs/API.md has a Ledger section.
+- Points per size (S=1, M=2, L=4) are not implemented yet. That belongs to the contribution
+calculation (later phase).
