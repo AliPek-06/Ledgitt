@@ -49,9 +49,10 @@ def team_contribution(session: Session, team: Team, t: float, cutoff: datetime) 
     return contribution_rows([MemberInfo(m.id, m.name) for m in members], items, points, t)
 
 
-def _alert_reason(row: Contribution, c: float) -> str:
-    return (f"At {round(c * 100)}% of the timeline: {row.actual_points:g} of "
-            f"{row.expected_points:.1f} expected points confirmed")
+def _alert_reason(row: Contribution) -> str:
+    # No checkpoint in the text: the alert has a `checkpoint` field and the
+    # frontend says "At the N% checkpoint" itself.
+    return f"{row.actual_points:g} of {row.expected_points:.1f} expected points confirmed"
 
 
 def evaluate_due_checkpoints(session: Session, team_id: int) -> None:
@@ -75,7 +76,7 @@ def evaluate_due_checkpoints(session: Session, team_id: int) -> None:
                 ms.streak += 1
                 session.add(Alert(
                     team_id=team_id, member_id=row.member_id, checkpoint=c,
-                    level=next_level(ms.streak), reason=_alert_reason(row, c), created_at=at,
+                    level=next_level(ms.streak), reason=_alert_reason(row), created_at=at,
                 ))
             else:
                 ms.streak = 0

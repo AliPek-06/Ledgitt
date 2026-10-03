@@ -130,6 +130,8 @@ def test_recovery_resolves_alerts_and_resets_streak(client, session):
     set_time(client, day(11))
     (alert,) = db_alerts(session, ctx)
     assert alert.resolved is False and streak(session, ctx, "Cam") == 1
+    # Expected at 0.33 = 8 * 0.33 = 2.64; the checkpoint is not repeated in the text.
+    assert alert.reason == "0 of 2.6 expected points confirmed"
 
     log(client, ctx, "Cam", "L", day(15))
     log(client, ctx, "Cam", "L", day(15, 1))
