@@ -100,9 +100,9 @@ PASTED_TEXT = (
     "orientation. The Howe truss reverses the Pratt arrangement so that diagonals carry "
     "compression, a layout historically favoured for timber construction. Designers select a "
     "configuration based on span length, expected live loads, material availability, and "
-    "fabrication cost, and must also consider fatigue at the joints, which are often the "
-    "critical points for long-term durability and maintenance planning."
-)[:900]
+    "fabrication cost before sizing joints."
+)
+assert len(PASTED_TEXT) == 900  # the story calls for a 900-character paste
 
 
 def _team(session, a, name, members, charter):
