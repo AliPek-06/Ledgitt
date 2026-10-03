@@ -85,3 +85,26 @@ what was built or changed, key files, decisions made, and anything left open.
     overview/alerts endpoints depend on it. Mocks use 0.33/0.66.
   - `npm run typecheck` and `npm run build` pass (Node 24). The F1 "Done when"
     checks in the browser still need doing by hand.
+### 2026-10-03 - Phase F2: teacher screens
+- /teacher/new (src/pages/TeacherNew.tsx): title + start/due date form; dates are sent
+  as local midnight in ISO 8601. Client-side check that due > start, and backend
+  errors are shown. On success, a large join link with a Copy button, the join code,
+  and a link to the dashboard.
+- /teacher/:assignmentId (src/pages/TeacherAssignment.tsx): GET overview, polled every
+  3s. One card per team: name, health dot + label, members, open disputes, "charter
+  not locked" note, teacher-level alerts with reasons (the only red UI).
+  Health labels: green "On track", amber "Worth a check-in", red "Needs your support".
+- Clicking a team card sets the current user to "teacher" and opens /team/:id.
+  Decision: "read-only workspace" = viewing as teacher (no member id). F4 must hide
+  log/review/edit controls when the current user is "teacher".
+- Shared: src/hooks/usePolling.ts (3s, no overlapping requests, keeps last good data
+  on error), src/lib/format.ts (dates, plurals). Design tokens in src/index.css:
+  deep-teal accent (bg-accent, text-accent...), stone neutrals, 18px base font for
+  the projector. Layout now uses these; the "mock data" badge is neutral, not amber.
+- Mocks: added Group 3 (Alex, Ben, Chloe; open teacher alert for Ben -> red) and
+  Group 2 (Noah, Lena, Omar; unlocked charter -> green) so all three colours show.
+  Ben's teacher alert is set directly; mocks do not run the escalation ladder.
+- Verified: typecheck + build pass; mock overview gives Group 7 amber, Group 3 red,
+  Group 2 green. Not yet checked in a browser.
+- Open: the RULES.md vs API.md "teacher" alert-level disagreement still stands; the
+  red state on this dashboard only exists if the teacher level is kept.

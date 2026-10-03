@@ -29,20 +29,31 @@ export const assignments: Assignment[] = [
   },
 ];
 
+// Groups 3 and 2 exist so the teacher dashboard shows all three health
+// colours: Group 7 amber (disputes), Group 3 red (teacher alert), Group 2 green.
 export const teams: Team[] = [
   { id: 1, assignment_id: 1, name: "Group 7", charter_locked: true },
+  { id: 2, assignment_id: 1, name: "Group 3", charter_locked: true },
+  { id: 3, assignment_id: 1, name: "Group 2", charter_locked: false },
 ];
 
 export const MAYA = 1;
 export const JORDAN = 2;
 export const PRIYA = 3;
 export const SAM = 4;
+export const BEN = 6;
 
 export const members: Member[] = [
   { id: MAYA, team_id: 1, name: "Maya" },
   { id: JORDAN, team_id: 1, name: "Jordan" },
   { id: PRIYA, team_id: 1, name: "Priya" },
   { id: SAM, team_id: 1, name: "Sam" },
+  { id: 5, team_id: 2, name: "Alex" },
+  { id: BEN, team_id: 2, name: "Ben" },
+  { id: 7, team_id: 2, name: "Chloe" },
+  { id: 8, team_id: 3, name: "Noah" },
+  { id: 9, team_id: 3, name: "Lena" },
+  { id: 10, team_id: 3, name: "Omar" },
 ];
 
 export const charterItems: CharterItem[] = [
@@ -175,6 +186,13 @@ export const alerts: Alert[] = [
   {
     id: 1, team_id: 1, member_id: SAM, checkpoint: 0.33, level: "private",
     reason: "At the 33% checkpoint you had 0 confirmed points against about 1.8 expected from your charter.",
+    created_at: "2026-09-20T18:00:00Z", resolved: false,
+  },
+  // Mocks don't run checkpoints, so this teacher-level alert is set directly
+  // to exercise the red state. In the real engine it needs a longer streak.
+  {
+    id: 2, team_id: 2, member_id: BEN, checkpoint: 0.33, level: "teacher",
+    reason: "No confirmed work yet, and well behind the plan for this stage.",
     created_at: "2026-09-20T18:00:00Z", resolved: false,
   },
 ];

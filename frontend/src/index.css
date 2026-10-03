@@ -1,1 +1,14 @@
 @import "tailwindcss";
+
+/* Design direction (build guide F0): neutral base, one calm deep-teal accent.
+   Green = on track, amber = needs attention, red only for teacher-level alerts. */
+@theme {
+  --color-accent: #0f5e5b;
+  --color-accent-strong: #0b4744;
+  --color-accent-soft: #e3f0ef;
+}
+
+/* Large base size: the demo is shown on a projector. */
+html {
+  font-size: 18px;
+}
