@@ -108,3 +108,28 @@ what was built or changed, key files, decisions made, and anything left open.
   Group 2 green. Not yet checked in a browser.
 - Open: the RULES.md vs API.md "teacher" alert-level disagreement still stands; the
   red state on this dashboard only exists if the teacher level is kept.
+### 2026-10-03 - Phase F3: join page and charter builder
+- /join/:code (src/pages/Join.tsx): GET /join/{code}; shows assignment title, dates and
+  teams (radio cards, "Charter agreed" / "Still planning"), or "Start a new team" with
+  a name field. Join = optional POST team, then POST member; sets the current user to
+  the new member and goes to the charter if unlocked, else the workspace. Unknown
+  code -> friendly 404 message.
+- /team/:teamId/charter (src/pages/TeamCharter.tsx): loads GET team + GET assignment
+  once (no polling, so it never clobbers unsaved edits). Rows of member / responsibility
+  / planned points / time window. Client-side checks mirror the B3 rules; Save is
+  disabled while invalid or unchanged; "Unsaved changes" indicator.
+  Lock: disabled while there are unsaved changes, asks for confirmation in a modal,
+  then the page turns read-only with a link to the workspace. If a save fails, the
+  page re-fetches in case a teammate locked it meanwhile.
+- Decision: the charter is also read-only for anyone who isn't a member of that team
+  (including "teacher"), with a hint to switch user.
+- New components: RangeSlider (two handles, pointer + keyboard, 1% steps, checkpoint
+  ticks), CharterTimeline (one lane per member with point totals, bars stack when a
+  member's items overlap, dashed checkpoint lines labelled with % and date), Modal
+  (reusable; Escape/backdrop closes). lib/format.ts: formatPct, dateAtPct.
+- Checkpoint markers come from assignment.checkpoints, not a hard-coded 25/50/75, so
+  they follow whatever RULES.md/API.md settle on (mocks: 33/66).
+- Mocks: Sam's charter windows moved to 0.0-0.35 and 0.6-1.0 (work at the start and
+  end, as in the B7 seed); Sam's alert reason updated to ~3.8 expected points.
+- Verified: typecheck + build pass; mock join flow and charter save / validation /
+  lock / save-after-lock checked in Node. Not yet checked in a browser.

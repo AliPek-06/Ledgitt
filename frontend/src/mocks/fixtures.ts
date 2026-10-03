@@ -61,8 +61,8 @@ export const charterItems: CharterItem[] = [
   { id: 2, team_id: 1, member_id: MAYA, responsibility: "Final edit and formatting", planned_points: 2, start_pct: 0.8, end_pct: 1.0 },
   { id: 3, team_id: 1, member_id: JORDAN, responsibility: "Survey design and data collection", planned_points: 6, start_pct: 0.1, end_pct: 0.5 },
   { id: 4, team_id: 1, member_id: PRIYA, responsibility: "Methodology section", planned_points: 4, start_pct: 0.1, end_pct: 0.6 },
-  { id: 5, team_id: 1, member_id: SAM, responsibility: "Data analysis and charts", planned_points: 4, start_pct: 0.15, end_pct: 0.55 },
-  { id: 6, team_id: 1, member_id: SAM, responsibility: "Presentation slides", planned_points: 2, start_pct: 0.6, end_pct: 0.9 },
+  { id: 5, team_id: 1, member_id: SAM, responsibility: "Data analysis and charts", planned_points: 4, start_pct: 0.0, end_pct: 0.35 },
+  { id: 6, team_id: 1, member_id: SAM, responsibility: "Presentation slides", planned_points: 2, start_pct: 0.6, end_pct: 1.0 },
 ];
 
 let reviewId = 0;
@@ -185,7 +185,7 @@ export const pasteEvents: PasteEvent[] = [
 export const alerts: Alert[] = [
   {
     id: 1, team_id: 1, member_id: SAM, checkpoint: 0.33, level: "private",
-    reason: "At the 33% checkpoint you had 0 confirmed points against about 1.8 expected from your charter.",
+    reason: "At the 33% checkpoint you had 0 confirmed points against about 3.8 expected from your charter.",
     created_at: "2026-09-20T18:00:00Z", resolved: false,
   },
   // Mocks don't run checkpoints, so this teacher-level alert is set directly
