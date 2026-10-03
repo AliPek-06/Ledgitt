@@ -18,10 +18,16 @@ const input =
   "w-full rounded-lg border border-stone-300 px-3 py-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20";
 
 // Accepts "docs.google.com/..." as well as full URLs. Returns null if invalid.
+// The URL parser alone is too lenient (browsers accept "https://not a link"),
+// so also require no spaces, http(s), and a host with a dot or "localhost".
 function normaliseUrl(raw: string): URL | null {
   const value = raw.trim();
+  if (value === "" || /\s/.test(value)) return null;
   try {
-    return new URL(/^[a-z]+:\/\//i.test(value) ? value : `https://${value}`);
+    const url = new URL(/^[a-z]+:\/\//i.test(value) ? value : `https://${value}`);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    if (!url.hostname.includes(".") && url.hostname !== "localhost") return null;
+    return url;
   } catch {
     return null;
   }

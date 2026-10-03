@@ -189,3 +189,25 @@ what was built or changed, key files, decisions made, and anything left open.
 - Verified: typecheck + build pass; rules and the paste mocks (flagging, internal
   hidden, 403 on someone else's label, label clears flag) checked in Node. The editor
   itself (paste/burst hooks, autosave) has not been run in a browser yet.
+### 2026-10-03 - F3 browser test + layout fix
+- Ran the F3 checklist end to end in headless Edge (real clicks, drags, typing, keys)
+  against `npm run dev:mocks`: 41/41 checks pass, no console errors.
+- Fix: src/index.css `scrollbar-gutter: stable` on html. Without it, when content
+  height crossed the viewport (e.g. timeline bars un-stacking while dragging a
+  slider) the scrollbar appeared/disappeared and the centred layout jumped 7.5px
+  sideways mid-drag.
+- Note: a blank page earlier was the Vite dev server caching an empty
+  usePolling.ts (read mid-write). Not a code bug; restarting `npm run dev` or
+  touching the file clears it.
+### 2026-10-03 - F4/F5 browser test + evidence-link fix
+- Ran the F4 and F5 checklists end to end in headless Edge against `npm run dev:mocks`
+  (real clicks/typing; pastes and cuts sent as real ClipboardEvents into TipTap, burst
+  typed as rapid input): 52/52 checks pass, no console errors. Covered: private alert
+  visibility, teacher read-only, logging with charter item + link, confirm/dispute
+  rules and status changes, polling stability, label flow, autosave + persistence
+  across tabs, outside paste -> modal, cut + paste move -> no modal, existing text ->
+  no modal, burst -> modal, teacher read-only editor.
+- Fix (src/components/ledger/LogWorkForm.tsx): evidence links were validated only with
+  `new URL()`, which browsers accept for "https://not a link" (spaces get
+  percent-encoded), so junk was saved as evidence. Now also requires no whitespace,
+  http(s), and a host containing a dot (or localhost).

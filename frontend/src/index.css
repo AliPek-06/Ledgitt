@@ -11,6 +11,9 @@
 /* Large base size: the demo is shown on a projector. */
 html {
   font-size: 18px;
+  /* Always reserve the scrollbar's space, so the centred layout doesn't jump
+     sideways when content grows or shrinks (e.g. while dragging a slider). */
+  scrollbar-gutter: stable;
 }
 
 /* Shared document (TipTap). Tailwind's reset removes heading and list styles. */
