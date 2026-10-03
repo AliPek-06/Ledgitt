@@ -121,6 +121,51 @@ class EntryOut(BaseModel):
     reviews: list[ReviewOut]
 
 
+class DocumentIn(BaseModel):
+    member_id: int
+    content_html: str
+    content_text: str
+
+
+class DocumentOut(BaseModel):
+    team_id: int
+    content_html: str
+    content_text: str
+    updated_at: datetime
+    updated_by: Optional[int]
+
+
+class PasteCreate(BaseModel):
+    # Allowed values are checked in the documents router so they return 400.
+    member_id: int
+    kind: str  # "paste" | "burst"
+    char_count: int
+    preview: str  # server keeps the first 120 chars
+    is_internal: bool  # decided by the frontend; trusted
+    label: Optional[str] = None
+    label_note: str = ""
+
+
+class PasteLabelIn(BaseModel):
+    member_id: int  # must be the member who pasted
+    label: str  # "my_notes" | "quote" | "moved" | "other"
+    label_note: str = ""
+
+
+class PasteOut(BaseModel):
+    id: int
+    team_id: int
+    member_id: int
+    kind: str
+    char_count: int
+    preview: str
+    is_internal: bool
+    label: Optional[str]
+    label_note: str
+    flagged: bool
+    created_at: datetime
+
+
 class DemoTimeIn(BaseModel):
     now: Optional[datetime]  # null clears the override
 

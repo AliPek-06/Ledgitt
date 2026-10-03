@@ -206,6 +206,27 @@ Append-only. There are no update or delete endpoints for entries or reviews.
   - one review per reviewer per entry, ever. Reviews that are hidden by demo time still count.
 - Reviewing an entry that doesn't exist or is hidden by demo time returns `404`.
 
+### Document and pastes
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/api/teams/{id}/document` | | [Document](#document) (created empty on first GET) |
+| PUT | `/api/teams/{id}/document` | `{member_id, content_html, content_text}` | [Document](#document) |
+| POST | `/api/teams/{id}/pastes` | `{member_id, kind, char_count, preview, is_internal, label?, label_note?}` | `201` [PasteEvent](#pasteevent) |
+| GET | `/api/teams/{id}/pastes` | | [PasteEvent](#pasteevent)[], newest first |
+| PATCH | `/api/pastes/{id}/label` | `{member_id, label, label_note?}` | [PasteEvent](#pasteevent) |
+
+- Document PUT overwrites the whole document. The server sets `updated_at` to now and `updated_by` to `member_id`. `member_id` must be in the team (`400`).
+- Paste POST:
+  - The frontend detects pastes and bursts and decides `is_internal`. The backend trusts that and doesn't recheck the 200/300-character thresholds.
+  - The server cuts `preview` to 120 characters, sets `created_at` to now and computes `flagged = not is_internal and label is null`.
+  - `400` if the member isn't in the team, `kind` isn't `paste`/`burst`, `label` isn't one of the allowed values, or `char_count` is negative.
+- Paste GET returns only events that are not internal and have `created_at <= now`.
+- Label PATCH:
+  - Only the member who pasted may label (`403` otherwise). `label` must be `my_notes`, `quote`, `moved` or `other` (`400`).
+  - Labelling sets `flagged = false`.
+  - A paste that doesn't exist or is hidden by demo time returns `404`.
+
 ### Demo time
 
 | Method | Path | Body | Response |

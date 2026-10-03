@@ -136,3 +136,26 @@ confirms, so its entries are confirmed straight away.
 - docs/API.md has a Ledger section.
 - Points per size (S=1, M=2, L=4) are not implemented yet. That belongs to the contribution
 calculation (later phase).
+### 2026-10-03 - Phase B5: document and pastes
+- app/routers/documents.py:
+  - GET /api/teams/{id}/document creates an empty Document on the first GET
+  (updated_at = clock.now(), updated_by = null).
+  - PUT /api/teams/{id}/document takes {member_id, content_html, content_text} and
+  overwrites. Sets updated_at/updated_by. The member must be in the team (400).
+  - POST /api/teams/{id}/pastes stores the event. The server cuts preview to 120
+  characters and sets created_at = clock.now().
+  - flagged = is_flagged(is_internal, label) = not is_internal and label is None.
+  - The backend trusts the frontend's is_internal and does not enforce the 200/300
+  thresholds.
+  - A label may be given on create. 400 for bad kind, bad label, negative char_count,
+  or a member not in the team.
+  - GET /api/teams/{id}/pastes returns non-internal events with created_at <= now,
+  newest first.
+  - PATCH /api/pastes/{id}/label takes {member_id, label, label_note}:
+    - 403 unless member_id is the paster.
+    - label must be one of my_notes/quote/moved/other (null not allowed).
+    - Sets flagged = false.
+    - 404 if the paste is hidden by demo time.
+- Paste events are not append-only: a label can be changed again.
+- tests/test_documents.py; 105 tests total. docs/API.md has a "Document and pastes"
+section.
