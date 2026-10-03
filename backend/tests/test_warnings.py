@@ -122,12 +122,7 @@ def test_team_median_none_when_nobody_expected():
     assert all(r.status == "not_started_yet" for r in rows)
 
 
-@pytest.mark.parametrize("open_team_alerts,disputed,health", [
-    (0, 0, "green"),
-    (0, 1, "amber"),
-    (1, 0, "red"),
-    (2, 3, "red"),
-])
-def test_team_health(open_team_alerts, disputed, health):
+@pytest.mark.parametrize("disputed,health", [(0, "green"), (1, "amber"), (3, "amber")])
+def test_team_health(disputed, health):
     from app.services.warnings import team_health
-    assert team_health(open_team_alerts, disputed) == health
+    assert team_health(disputed) == health

@@ -63,8 +63,7 @@ class TeamHealthOut(BaseModel):
     name: str
     charter_locked: bool
     member_count: int
-    health: str  # "red" | "amber" | "green"
-    open_team_alerts: int
+    health: str  # "amber" | "green"; alerts never affect it (teachers are never notified)
     disputed_entries: int
     flagged_pastes: int
 

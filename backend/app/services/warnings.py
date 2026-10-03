@@ -108,10 +108,8 @@ def next_level(streak: int) -> str:
     return "private" if streak <= 1 else "team"
 
 
-def team_health(open_team_alerts: int, disputed_entries: int) -> str:
-    """Overview colour. Private alerts are deliberately not an input: they stay private."""
-    if open_team_alerts > 0:
-        return "red"
+def team_health(disputed_entries: int) -> str:
+    """Overview colour. Alerts are deliberately not an input: teachers are never notified."""
     if disputed_entries > 0:
         return "amber"
     return "green"

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, func, select
 
 from app.db import get_session
-from app.models import Alert, Assignment, Member, PasteEvent, Team
+from app.models import Assignment, Member, PasteEvent, Team
 from app.routers.assignments import JOIN_BASE_URL
 from app.schemas import AssignmentSummaryOut, OverviewOut, TeamHealthOut
 from app.services import clock
@@ -28,10 +28,6 @@ def get_overview(assignment_id: int, session: Session = Depends(get_session)):
     for t in teams:
         evaluate_due_checkpoints(session, t.id)
         size = _count(session, select(func.count()).select_from(Member).where(Member.team_id == t.id))
-        open_team = _count(session, select(func.count()).select_from(Alert).where(
-            Alert.team_id == t.id, Alert.level == "team", Alert.resolved == False,  # noqa: E712
-            Alert.created_at <= now,
-        ))
         disputed = sum(1 for e in entry_points(session, t.id, size, now) if e.status == "disputed")
         flagged = _count(session, select(func.count()).select_from(PasteEvent).where(
             PasteEvent.team_id == t.id, PasteEvent.flagged == True,  # noqa: E712
@@ -39,7 +35,7 @@ def get_overview(assignment_id: int, session: Session = Depends(get_session)):
         ))
         rows.append(TeamHealthOut(
             id=t.id, name=t.name, charter_locked=t.charter_locked, member_count=size,
-            health=team_health(open_team, disputed), open_team_alerts=open_team,
+            health=team_health(disputed),
             disputed_entries=disputed, flagged_pastes=flagged,
         ))
 

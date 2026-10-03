@@ -81,8 +81,9 @@ def test_story(client, session):
     contribution = client.get(f"/api/teams/{g7}/contribution").json()
     assert {m["name"]: m["status"] for m in contribution["members"]}["Sam"] == "on_track"
     _, teams = overview(client)
-    assert {n: t["health"] for n, t in teams.items()} == {"Group 7": "amber", "Group 3": "red"}
-    assert teams["Group 3"]["open_team_alerts"] == 1
+    # Teachers are never notified: Ben's team alert does not change the overview.
+    assert {n: t["health"] for n, t in teams.items()} == {"Group 7": "amber", "Group 3": "green"}
+    assert "open_team_alerts" not in teams["Group 3"]
 
 
 def dump(session):
@@ -117,12 +118,20 @@ def test_overview_unknown_assignment_404(client):
     assert client.get("/api/assignments/999/overview").status_code == 404
 
 
-def test_overview_ignores_private_alerts_and_future_records(client):
+def test_overview_never_reflects_alerts(client, session):
+    """Teachers are never notified: health only reacts to disputes, at any stage."""
     client.post("/api/demo/seed")
-    set_t(client, 0.35)  # private alerts only
+    for t, g7, g3 in [(0.35, "green", "green"), (0.50, "amber", "green"), (0.70, "amber", "green")]:
+        set_t(client, t)
+        _, teams = overview(client)
+        assert {n: x["health"] for n, x in teams.items()} == {"Group 7": g7, "Group 3": g3}, t
+    # Alerts do exist (Ben is at team level), the overview just never shows them.
+    assert ("Ben", 0.66, "team", False) in alert_rows(session)
+
+
+def test_overview_hides_future_disputes(client):
+    client.post("/api/demo/seed")
+    set_t(client, 0.50)
+    set_t(client, 0.40)  # Priya's dispute (t=0.45) is hidden again
     _, teams = overview(client)
-    assert teams["Group 3"]["open_team_alerts"] == 0
-    set_t(client, 0.70)
-    set_t(client, 0.50)  # team alert (dated at 0.66) is hidden again
-    _, teams = overview(client)
-    assert teams["Group 3"]["health"] == "green"
+    assert teams["Group 7"]["health"] == "green" and teams["Group 7"]["disputed_entries"] == 0
