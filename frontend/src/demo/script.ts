@@ -260,5 +260,5 @@ export const steps: Step[] = [
   { section: "Checkpoints", caption: "Second checkpoint: still behind, so the team now knows.", viewer: MAYA, duration: 1450 },
   { section: "Progress", caption: "The whole picture: plans, real progress, and where it slipped.", viewer: MAYA, duration: 900 },
   { section: "Teacher", caption: "Teachers see progress. Alerts stay within the team.", viewer: "teacher", duration: 700 },
-  { section: null, caption: "", duration: 1200 },
+  { section: null, caption: "", duration: 500 },
 ];

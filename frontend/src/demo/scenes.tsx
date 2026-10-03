@@ -401,9 +401,6 @@ export function CloseScene() {
   return (
     <div className="flex h-full flex-col items-center justify-center text-center">
       <h1 className="demo-pop text-8xl font-semibold tracking-tight text-accent">Ledgitt</h1>
-      <p className="demo-pop mt-6 text-3xl text-stone-700" style={{ animationDelay: "500ms" }}>
-        Catch it while it can still be fixed.
-      </p>
     </div>
   );
 }

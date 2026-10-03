@@ -482,3 +482,5 @@ reverted, so ProgressTab is unchanged.
   - Production build ok (Demo chunk 20 kB JS + 1 kB CSS).
 - Note: the automation browser tab was "hidden", which throttles timers and painting.
 Mid-animation screenshots lag there; a visible presenter tab animates normally.
+- Later change: the closing title card shows only "Ledgitt" (tagline removed). Its
+step duration is 500 ms, enough for the name's fade-in.
