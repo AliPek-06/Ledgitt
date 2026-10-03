@@ -7,7 +7,7 @@ stores them as given and only derives `flagged`.
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from app.db import get_session
 from app.models import Document, Member, PasteEvent, Team
@@ -108,7 +108,7 @@ def list_pastes(team_id: int, session: Session = Depends(get_session)):
             PasteEvent.is_internal == False,  # noqa: E712
             PasteEvent.created_at <= clock.now(),
         )
-        .order_by(PasteEvent.created_at.desc(), PasteEvent.id.desc())
+        .order_by(col(PasteEvent.created_at).desc(), col(PasteEvent.id).desc())
     ).all()
 
 

@@ -36,7 +36,8 @@ def replace_charter(team_id: int, body: CharterIn, session: Session = Depends(ge
     if t.charter_locked:
         raise HTTPException(400, "Charter is locked and can no longer be edited")
 
-    member_ids = set(session.exec(select(Member.id).where(Member.team_id == team_id)).all())
+    ids = session.exec(select(Member.id).where(Member.team_id == team_id)).all()
+    member_ids = {i for i in ids if i is not None}  # ids are Optional only before insert
     for n, item in enumerate(body.items, start=1):
         _validate_item(n, item, member_ids)
 

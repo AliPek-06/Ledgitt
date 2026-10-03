@@ -1,7 +1,7 @@
 """Append-only ledger. There are deliberately no update or delete endpoints."""
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, func, select
+from sqlmodel import Session, col, func, select
 
 from app.db import get_session
 from app.models import CharterItem, Entry, Member, Review, Team
@@ -87,7 +87,7 @@ def list_entries(team_id: int, session: Session = Depends(get_session)):
     entries = session.exec(
         select(Entry)
         .where(Entry.team_id == team_id, Entry.created_at <= clock.now())
-        .order_by(Entry.created_at.desc(), Entry.id.desc())
+        .order_by(col(Entry.created_at).desc(), col(Entry.id).desc())
     ).all()
     size = _team_size(session, team_id)
     return [_entry_out(session, e, size) for e in entries]

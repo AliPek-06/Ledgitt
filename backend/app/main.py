@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.db import create_db_and_tables
-from app.routers import assignments, charter, demo, documents, ledger, teams
+from app.routers import assignments, charter, demo, documents, ledger, teams, warnings
 
 
 @asynccontextmanager
@@ -28,6 +28,7 @@ app.include_router(teams.router)
 app.include_router(charter.router)
 app.include_router(ledger.router)
 app.include_router(documents.router)
+app.include_router(warnings.router)
 app.include_router(demo.router)
 
 

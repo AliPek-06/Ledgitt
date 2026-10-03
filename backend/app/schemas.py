@@ -166,6 +166,32 @@ class PasteOut(BaseModel):
     created_at: datetime
 
 
+class ContributionOut(BaseModel):
+    member_id: int
+    name: str
+    expected_points: float
+    actual_points: float
+    progress_ratio: Optional[float]  # null when expected < 1
+    status: str  # "not_started_yet" | "behind" | "on_track"
+
+
+class TeamContributionOut(BaseModel):
+    t: float
+    team_median: Optional[float]
+    members: list[ContributionOut]
+
+
+class AlertOut(BaseModel):
+    id: int
+    team_id: int
+    member_id: int
+    checkpoint: float
+    level: str  # "private" | "team"
+    reason: str
+    created_at: datetime
+    resolved: bool
+
+
 class DemoTimeIn(BaseModel):
     now: Optional[datetime]  # null clears the override
 
