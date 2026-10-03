@@ -160,3 +160,32 @@ what was built or changed, key files, decisions made, and anything left open.
   the private alert about Sam, Maya and teacher don't), newest-first order, pending ->
   confirmed after 2 confirms -> disputed, and the self-review / double-review /
   empty-note rejections. Not yet checked in a browser.
+### 2026-10-03 - Phase F5: shared editor with paste detection
+- Added @tiptap/react, @tiptap/starter-kit, @tiptap/pm 3.31 (TipTap is in the stack).
+  The Document tab is lazy-loaded so the editor (~400 kB) isn't in the main bundle.
+- src/lib/pasteDetection.ts: pure RULES.md logic: normalise, isLargePaste (>= 200),
+  isInternalPaste, BurstTracker (>= 300 chars in a sliding 10 s window, then reset).
+- src/components/document/:
+  - DocumentEditor: loads GET document, autosaves with PUT 1.5 s after the last edit
+    (indicator: Editing… / Saving… / ✓ Saved / Couldn't save, retrying…), flushes a
+    pending save when leaving the tab. Read-only for non-members.
+    Paste: handlePaste runs before the paste is applied, so is_internal is checked
+    against the document text "before". Burst: onUpdate counts text inserted by each
+    transaction's steps.
+  - LabelPasteModal ("Where's this text from?": My own notes / A quote (with source) /
+    Moved from elsewhere / Other + optional note -> PATCH label). "Later" closes it and
+    the paste stays flagged.
+  - FlaggedPastesPanel: flagged events for the team (who, when, size, paste/burst,
+    preview); "Label it" only on your own.
+  - DocumentTab: wires them together; pastes polled every 3 s, refreshed after events.
+- Decisions:
+  - Text cut from this document in the session (last 5 cuts) also counts as internal,
+    so moving a paragraph with cut + paste isn't flagged. Drag-moving (drop), pastes
+    and undo/redo never count toward bursts.
+  - Bursts are never internal, so they also open the label modal.
+  - Teammates' saves are picked up by polling only when you have nothing unsaved and
+    the editor isn't focused, so polling never overwrites your work or moves your
+    cursor. No real-time co-editing: two people typing at once -> last save wins.
+- Verified: typecheck + build pass; rules and the paste mocks (flagging, internal
+  hidden, 403 on someone else's label, label clears flag) checked in Node. The editor
+  itself (paste/burst hooks, autosave) has not been run in a browser yet.

@@ -1,9 +1,13 @@
+import { lazy, Suspense } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { getTeam, listAlerts } from "../api/client";
 import AlertsBanner from "../components/AlertsBanner";
 import LedgerTab from "../components/ledger/LedgerTab";
 import { useCurrentUser } from "../context/CurrentUserContext";
 import { usePolling } from "../hooks/usePolling";
+
+// The editor (TipTap) is large, so it only loads when the Document tab opens.
+const DocumentTab = lazy(() => import("../components/document/DocumentTab"));
 
 const TABS = [
   { id: "ledger", label: "Ledger" },
@@ -70,7 +74,11 @@ export default function TeamWorkspace() {
 
       <div className="mt-8">
         {tab === "ledger" && <LedgerTab team={team} me={me} />}
-        {tab === "document" && <p className="text-stone-500">The shared document arrives in phase F5.</p>}
+        {tab === "document" && (
+          <Suspense fallback={<p className="text-stone-500">Loading the document…</p>}>
+            <DocumentTab team={team} me={me} />
+          </Suspense>
+        )}
         {tab === "progress" && <p className="text-stone-500">The progress dashboard arrives in phase F6.</p>}
       </div>
     </section>
