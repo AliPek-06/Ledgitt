@@ -41,6 +41,7 @@ Computed per member, at time `t`.
 - Checkpoints come from the assignment (default `0.33, 0.66`).
 - Each checkpoint is evaluated once per team, the first time `t` passes it.
 - Evaluation is lazy: run any due checkpoints whenever contribution, alerts or overview is requested, and whenever demo time changes.
+- A checkpoint is judged as of its own moment: `t = checkpoint`, counting only entries and reviews created up to the checkpoint's datetime. The alert's `created_at` is that datetime. So jumping demo time past several checkpoints evaluates each one fairly.
 - Only locked charters are evaluated.
 - For each member at a checkpoint:
   - **behind**: `streak += 1`, create an alert whose level depends on the streak:
@@ -52,6 +53,13 @@ Computed per member, at time `t`.
 
 - **private**: only the member it is about.
 - **team**: every member of the team.
+
+## Team health (overview)
+
+- **red**: any open (unresolved) `team` alert.
+- **amber**: otherwise, any disputed entry.
+- **green**: otherwise.
+- Private alerts never affect health, so they stay private.
 
 ## Paste detection
 

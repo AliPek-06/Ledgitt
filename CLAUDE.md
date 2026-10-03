@@ -37,177 +37,208 @@ what was built or changed, key files, decisions made, and anything left open.
   alert level. The user asked to leave API.md unchanged for now, so RULES.md and
   API.md disagree here.
   - API.md has no endpoints yet.
-  - The Contribution model is truncated after actual_points.
-### 2026-10-03 - Phase F1: frontend scaffold, API client, mocks
-- Vite + React 19 + TypeScript + Tailwind v4 (@tailwindcss/vite) + React Router 7 in
-  frontend/. Written by hand: Node was not installed on the dev machine, so
-  `npm install` and a typecheck have NOT been run yet.
-- src/api/types.ts: every model in API.md, plus request-body types and Clock.
-- src/api/client.ts: one function per endpoint, base http://localhost:8000/api.
-  `VITE_USE_MOCKS=true` (or `npm run dev:mocks`, which loads .env.mocks) routes every
-  call to src/mocks/mockApi.ts.
-- src/mocks/fixtures.ts: assignment 1 (join code GRP7K4, checkpoints 0.33/0.66),
-  team 1 "Group 7" (Maya 1, Jordan 2, Priya 3, Sam 4), locked 6-item charter,
-  11 entries (5 confirmed, 4 pending, 2 disputed), one flagged paste (Jordan), one
-  internal paste (Priya), one private alert for Sam at 0.33. Mock now = 2026-09-24.
-- src/mocks/mockApi.ts: in-memory store; re-derives entry status and contributions
-  per RULES.md, hides records after "now", supports a demo clock override.
-  Checkpoints are not re-evaluated in mocks.
-- Routes (placeholders): /teacher/new, /teacher/:assignmentId, /join/:code,
-  /team/:teamId/charter, /team/:teamId, plus a dev index at /.
-- CurrentUserContext (member id or "teacher", saved in localStorage) and a header
-  switcher listing the members of the team in the URL.
-- Open:
-  - API.md has no endpoints. client.ts has a DRAFT endpoint list in its header
-    comment; it needs agreeing and copying into API.md before the backend builds them.
-  - Contribution type guesses `progress_ratio: number | null` and
-    `status: "not_started_yet" | "on_track" | "behind"` (API.md is truncated).
-  - AlertLevel keeps "teacher" to match API.md. RULES.md does not define what the
-    teacher sees; the mock shows the teacher team-level alerts only.
-  - Labelling a paste (POST /pastes/{id}/label) mutates a PasteEvent. PasteEvent is
-    not marked append-only, but confirm that is intended.
-### 2026-10-03 - API contract completed; F1 client and mocks aligned to it
-- docs/API.md now holds the full contract from section 3 of the build guide:
-  `/api` prefix, the endpoint table (23 endpoints incl. /demo/*), and the rest of
-  the Contribution model (`progress_ratio: float | null`, `status`).
-- Response shapes the guide described only in prose were defined in API.md:
-  AssignmentCreated (Assignment + join_url), JoinInfo, TeamDetail (Team + members +
-  charter_items), Overview / TeamOverview (health, open_disputes, teacher_alerts),
-  DemoTime. POST /entries/{id}/reviews returns the updated Entry. /demo/seed and
-  /demo/reset return {"ok": true}. Errors are FastAPI {"detail": ...}.
-- frontend/src/api/types.ts, client.ts and src/mocks/mockApi.ts rewritten to match.
-  ApiError moved to src/api/errors.ts. Mocks enforce the 400/403 rules (self-review,
-  double review, dispute note, charter validation and lock, paste label owner).
-- Supersedes the F1 open items "API.md has no endpoints" and "Contribution guessed".
-- Open:
-  - RULES.md vs API.md still disagree on checkpoint defaults (0.33/0.66 vs
-    0.25/0.5/0.75) and the "teacher" alert level. API.md keeps "teacher", and the
-    overview/alerts endpoints depend on it. Mocks use 0.33/0.66.
-  - `npm run typecheck` and `npm run build` pass (Node 24). The F1 "Done when"
-    checks in the browser still need doing by hand.
-### 2026-10-03 - Phase F2: teacher screens
-- /teacher/new (src/pages/TeacherNew.tsx): title + start/due date form; dates are sent
-  as local midnight in ISO 8601. Client-side check that due > start, and backend
-  errors are shown. On success, a large join link with a Copy button, the join code,
-  and a link to the dashboard.
-- /teacher/:assignmentId (src/pages/TeacherAssignment.tsx): GET overview, polled every
-  3s. One card per team: name, health dot + label, members, open disputes, "charter
-  not locked" note, teacher-level alerts with reasons (the only red UI).
-  Health labels: green "On track", amber "Worth a check-in", red "Needs your support".
-- Clicking a team card sets the current user to "teacher" and opens /team/:id.
-  Decision: "read-only workspace" = viewing as teacher (no member id). F4 must hide
-  log/review/edit controls when the current user is "teacher".
-- Shared: src/hooks/usePolling.ts (3s, no overlapping requests, keeps last good data
-  on error), src/lib/format.ts (dates, plurals). Design tokens in src/index.css:
-  deep-teal accent (bg-accent, text-accent...), stone neutrals, 18px base font for
-  the projector. Layout now uses these; the "mock data" badge is neutral, not amber.
-- Mocks: added Group 3 (Alex, Ben, Chloe; open teacher alert for Ben -> red) and
-  Group 2 (Noah, Lena, Omar; unlocked charter -> green) so all three colours show.
-  Ben's teacher alert is set directly; mocks do not run the escalation ladder.
-- Verified: typecheck + build pass; mock overview gives Group 7 amber, Group 3 red,
-  Group 2 green. Not yet checked in a browser.
-- Open: the RULES.md vs API.md "teacher" alert-level disagreement still stands; the
-  red state on this dashboard only exists if the teacher level is kept.
-### 2026-10-03 - Phase F3: join page and charter builder
-- /join/:code (src/pages/Join.tsx): GET /join/{code}; shows assignment title, dates and
-  teams (radio cards, "Charter agreed" / "Still planning"), or "Start a new team" with
-  a name field. Join = optional POST team, then POST member; sets the current user to
-  the new member and goes to the charter if unlocked, else the workspace. Unknown
-  code -> friendly 404 message.
-- /team/:teamId/charter (src/pages/TeamCharter.tsx): loads GET team + GET assignment
-  once (no polling, so it never clobbers unsaved edits). Rows of member / responsibility
-  / planned points / time window. Client-side checks mirror the B3 rules; Save is
-  disabled while invalid or unchanged; "Unsaved changes" indicator.
-  Lock: disabled while there are unsaved changes, asks for confirmation in a modal,
-  then the page turns read-only with a link to the workspace. If a save fails, the
-  page re-fetches in case a teammate locked it meanwhile.
-- Decision: the charter is also read-only for anyone who isn't a member of that team
-  (including "teacher"), with a hint to switch user.
-- New components: RangeSlider (two handles, pointer + keyboard, 1% steps, checkpoint
-  ticks), CharterTimeline (one lane per member with point totals, bars stack when a
-  member's items overlap, dashed checkpoint lines labelled with % and date), Modal
-  (reusable; Escape/backdrop closes). lib/format.ts: formatPct, dateAtPct.
-- Checkpoint markers come from assignment.checkpoints, not a hard-coded 25/50/75, so
-  they follow whatever RULES.md/API.md settle on (mocks: 33/66).
-- Mocks: Sam's charter windows moved to 0.0-0.35 and 0.6-1.0 (work at the start and
-  end, as in the B7 seed); Sam's alert reason updated to ~3.8 expected points.
-- Verified: typecheck + build pass; mock join flow and charter save / validation /
-  lock / save-after-lock checked in Node. Not yet checked in a browser.
-### 2026-10-03 - Phase F4: workspace shell and ledger
-- /team/:teamId (src/pages/TeamWorkspace.tsx): team name + members, charter link,
-  alerts banner, tabs Ledger / Document / Progress. The tab lives in `?tab=` (ledger is
-  the default) so the route list from F1 is unchanged. Document and Progress are
-  placeholders for F5/F6. Team (GET /teams/{id}) and alerts are polled every 3s.
-- User switcher: reuses the global header switcher (already on every page) rather
-  than adding a second one inside the workspace.
-- Read-only: anyone who isn't a member of the team (incl. "teacher", as opened from
-  the F2 dashboard) gets a notice and no log form or review buttons.
-- AlertsBanner (src/components/AlertsBanner.tsx): open alerts only. A private alert
-  about you = teal "Just for you" note ("You're a bit behind your plan for this
-  stage."); team-level = amber ("X has some catching up to do."); teacher-level =
-  red ("X could use some support."). Visibility filtering is left to the API.
-- Ledger tab (src/components/ledger/): LogWorkForm (description, S/M/L with hints and
-  points, optional charter item from your own items, optional evidence links sent as
-  kind "url"; bare domains get https://), entry feed (newest first, author, time,
-  size, status chip, charter item, evidence, reviews, "n of m confirmations needed"
-  while pending). Confirm/Dispute hidden on your own entries, after you've reviewed,
-  and for read-only viewers. DisputeModal requires a note. Status chips: confirmed
-  green, disputed amber, pending neutral.
-- usePolling now returns refresh(): polls immediately after a log/review; if a poll
-  is in flight, one more runs after it so the new data isn't missed.
-- lib/entries.ts: SIZES, confirmsNeeded(), status styles, evidence labels.
-- Verified: typecheck + build pass; in Node against mocks: alert visibility (Sam sees
-  the private alert about Sam, Maya and teacher don't), newest-first order, pending ->
-  confirmed after 2 confirms -> disputed, and the self-review / double-review /
-  empty-note rejections. Not yet checked in a browser.
-### 2026-10-03 - Phase F5: shared editor with paste detection
-- Added @tiptap/react, @tiptap/starter-kit, @tiptap/pm 3.31 (TipTap is in the stack).
-  The Document tab is lazy-loaded so the editor (~400 kB) isn't in the main bundle.
-- src/lib/pasteDetection.ts: pure RULES.md logic: normalise, isLargePaste (>= 200),
-  isInternalPaste, BurstTracker (>= 300 chars in a sliding 10 s window, then reset).
-- src/components/document/:
-  - DocumentEditor: loads GET document, autosaves with PUT 1.5 s after the last edit
-    (indicator: Editing… / Saving… / ✓ Saved / Couldn't save, retrying…), flushes a
-    pending save when leaving the tab. Read-only for non-members.
-    Paste: handlePaste runs before the paste is applied, so is_internal is checked
-    against the document text "before". Burst: onUpdate counts text inserted by each
-    transaction's steps.
-  - LabelPasteModal ("Where's this text from?": My own notes / A quote (with source) /
-    Moved from elsewhere / Other + optional note -> PATCH label). "Later" closes it and
-    the paste stays flagged.
-  - FlaggedPastesPanel: flagged events for the team (who, when, size, paste/burst,
-    preview); "Label it" only on your own.
-  - DocumentTab: wires them together; pastes polled every 3 s, refreshed after events.
-- Decisions:
-  - Text cut from this document in the session (last 5 cuts) also counts as internal,
-    so moving a paragraph with cut + paste isn't flagged. Drag-moving (drop), pastes
-    and undo/redo never count toward bursts.
-  - Bursts are never internal, so they also open the label modal.
-  - Teammates' saves are picked up by polling only when you have nothing unsaved and
-    the editor isn't focused, so polling never overwrites your work or moves your
-    cursor. No real-time co-editing: two people typing at once -> last save wins.
-- Verified: typecheck + build pass; rules and the paste mocks (flagging, internal
-  hidden, 403 on someone else's label, label clears flag) checked in Node. The editor
-  itself (paste/burst hooks, autosave) has not been run in a browser yet.
-### 2026-10-03 - F3 browser test + layout fix
-- Ran the F3 checklist end to end in headless Edge (real clicks, drags, typing, keys)
-  against `npm run dev:mocks`: 41/41 checks pass, no console errors.
-- Fix: src/index.css `scrollbar-gutter: stable` on html. Without it, when content
-  height crossed the viewport (e.g. timeline bars un-stacking while dragging a
-  slider) the scrollbar appeared/disappeared and the centred layout jumped 7.5px
-  sideways mid-drag.
-- Note: a blank page earlier was the Vite dev server caching an empty
-  usePolling.ts (read mid-write). Not a code bug; restarting `npm run dev` or
-  touching the file clears it.
-### 2026-10-03 - F4/F5 browser test + evidence-link fix
-- Ran the F4 and F5 checklists end to end in headless Edge against `npm run dev:mocks`
-  (real clicks/typing; pastes and cuts sent as real ClipboardEvents into TipTap, burst
-  typed as rapid input): 52/52 checks pass, no console errors. Covered: private alert
-  visibility, teacher read-only, logging with charter item + link, confirm/dispute
-  rules and status changes, polling stability, label flow, autosave + persistence
-  across tabs, outside paste -> modal, cut + paste move -> no modal, existing text ->
-  no modal, burst -> modal, teacher read-only editor.
-- Fix (src/components/ledger/LogWorkForm.tsx): evidence links were validated only with
-  `new URL()`, which browsers accept for "https://not a link" (spaces get
-  percent-encoded), so junk was saved as evidence. Now also requires no whitespace,
-  http(s), and a host containing a dot (or localhost).
+  - The Contribution model is truncated after actual_points.### 2026-10-03 - Phase B1: backend skeleton
+- backend/app/main.py: FastAPI app, CORS for http://localhost:5173, GET /api/health
+-> {"ok": true}. Tables are created on startup (lifespan).
+- backend/app/db.py: SQLite engine (backend/ledger.db), get_session dependency.
+- backend/app/models.py: tables Assignment, Team, Member, CharterItem, Entry, Review,
+Document, PasteEvent, Alert, plus warning-engine state MemberStreak
+(team_id, member_id, streak) and EvaluatedCheckpoint (team_id, checkpoint).
+- Model decisions:
+  - Entry.evidence and Assignment.checkpoints are JSON columns.
+  - Assignment.checkpoints defaults to [0.33, 0.66].
+  - Entry.status and Entry.reviews are not stored. Status is derived from Review rows.
+  - Contribution is computed, so it has no table.
+  - Document's primary key is team_id.
+  - Enum-like fields are plain strings, with the allowed values in comments.
+  - Alert.level is "private" | "team".
+  - created_at has no default. Callers must set it from app/services/clock.py.
+- app/services/ exists but clock.py has not been written yet. It must exist before
+any endpoint creates records.
+- Tests: backend/tests/conftest.py provides an in-memory `session` fixture
+(StaticPool) and a `client` fixture (TestClient with get_session overridden; it
+skips lifespan so tests never touch ledger.db). test_health.py checks the health
+endpoint and that all tables exist.
+- requirements.txt: fastapi, uvicorn[standard], sqlmodel, pytest, httpx.
+- Dev machine only has Python 3.13 (venv at backend/.venv). Keep code 3.11-compatible.
+- No other endpoints yet.
+### 2026-10-03 - Phase B2: clock, assignments, teams, demo time
+- app/services/clock.py: now(), set_override(dt), clear_override(), is_overridden(),
+to_utc(dt). All datetimes are timezone-aware UTC because sqlmodel>=0.0.47 rejects
+naive datetimes. Naive input is treated as UTC. The API returns ISO strings with "Z".
+- app/schemas.py: Pydantic request/response models (AssignmentCreate validates
+due_date > start_date and that checkpoints are in (0, 1); stores them sorted).
+- app/routers/assignments.py: POST /api/assignments, GET /api/assignments/{id},
+GET /api/join/{code} (case-insensitive), POST /api/assignments/{id}/teams.
+Join codes are 6 characters from A-Z and 2-9, leaving out 0/O/1/I.
+join_url = http://localhost:5173/join/{code}.
+- app/routers/teams.py: POST /api/teams/{id}/members, GET /api/teams/{id} (with members).
+- app/routers/demo.py: GET/POST /api/demo/time; body {now: datetime|null}, null clears.
+Marked "B6" where checkpoint evaluation must be hooked in.
+- docs/API.md now has an Endpoints section documenting all of the above.
+- tests/conftest.py has an autouse fixture that clears the clock override.
+26 tests across test_clock, test_assignments, test_teams, test_demo_time.
+- Not done or open:
+  - No duplicate-name check on members.
+  - Adding members is not blocked when the charter is locked.
+  - API.md model section still has the stale "teacher" level and checkpoint default.
+### 2026-10-03 - Phase B3: charter
+- app/routers/charter.py:
+  - PUT /api/teams/{id}/charter takes {items: [...]} and replaces the whole charter
+  (old rows deleted, so ids change). It returns TeamDetail.
+  - POST /api/teams/{id}/charter/lock returns TeamDetail.
+- Validation returns 400, checked in the router, not Pydantic, so it isn't 422.
+The detail message names the item ("Charter item N: ..."). Rules:
+  - 0 <= start_pct < end_pct <= 1
+  - planned_points > 0
+  - responsibility not blank
+  - member_id belongs to the team
+  - PUT is rejected when locked
+  - If any item is invalid, nothing is saved.
+- Lock: 400 if the charter is empty or already locked. There is no unlock.
+- app/routers/teams.py: team_detail() helper. GET /api/teams/{id} now includes
+charter_items.
+- app/schemas.py: CharterItemIn, CharterIn, CharterItemOut;
+TeamDetailOut.charter_items.
+- tests/test_charter.py covers every rule; 47 tests total.
+- docs/API.md has a Charter section.
+### 2026-10-03 - Phase B4: ledger
+- app/services/status.py: pure entry_status(verdicts, team_size) and
+confirms_needed(team_size) = ceil((team_size - 1) / 2). A 1-person team needs 0
+confirms, so its entries are confirmed straight away.
+- app/routers/ledger.py (append-only, GET/POST only):
+  - POST /api/teams/{id}/entries
+  - GET /api/teams/{id}/entries (newest first)
+  - POST /api/entries/{id}/reviews (returns the updated entry)
+- created_at always comes from clock.now().
+- Time filtering:
+  - Entries with created_at > now are hidden.
+  - Reviews with created_at > now are hidden too, and status is computed only from
+  visible reviews.
+  - Team size = current member count (members have no created_at).
+- Entry rules (all 400):
+  - member in team, description not blank, size S/M/L
+  - evidence kind valid and ref not blank
+  - charter_item_id in the team, and only allowed once the charter is locked, because
+  PUT replaces item ids
+- Review rules (all 400):
+  - reviewer in team, not the author
+  - verdict is confirm/dispute
+  - a dispute needs a note
+  - one review per reviewer per entry, checked against all reviews including hidden
+  ones
+- Reviewing a hidden or unknown entry returns 404.
+- Tests:
+  - tests/test_status.py: unit tests for the pure function.
+  - tests/test_ledger.py: endpoints, rejections, time travel, and a check that no
+  PUT/PATCH/DELETE routes exist for entries/reviews.
+  - 81 tests total.
+- docs/API.md has a Ledger section.
+- Points per size (S=1, M=2, L=4) are not implemented yet. That belongs to the contribution
+calculation (later phase).
+### 2026-10-03 - Phase B5: document and pastes
+- app/routers/documents.py:
+  - GET /api/teams/{id}/document creates an empty Document on the first GET
+  (updated_at = clock.now(), updated_by = null).
+  - PUT /api/teams/{id}/document takes {member_id, content_html, content_text} and
+  overwrites. Sets updated_at/updated_by. The member must be in the team (400).
+  - POST /api/teams/{id}/pastes stores the event. The server cuts preview to 120
+  characters and sets created_at = clock.now().
+  - flagged = is_flagged(is_internal, label) = not is_internal and label is None.
+  - The backend trusts the frontend's is_internal and does not enforce the 200/300
+  thresholds.
+  - A label may be given on create. 400 for bad kind, bad label, negative char_count,
+  or a member not in the team.
+  - GET /api/teams/{id}/pastes returns non-internal events with created_at <= now,
+  newest first.
+  - PATCH /api/pastes/{id}/label takes {member_id, label, label_note}:
+    - 403 unless member_id is the paster.
+    - label must be one of my_notes/quote/moved/other (null not allowed).
+    - Sets flagged = false.
+    - 404 if the paste is hidden by demo time.
+- Paste events are not append-only: a label can be changed again.
+- tests/test_documents.py; 105 tests total. docs/API.md has a "Document and pastes"
+section.
+### 2026-10-03 - Phase B6: early warnings (contribution, checkpoints, alerts)
+- app/services/warnings.py (pure, no DB/clock):
+  - SIZE_POINTS = S1/M2/L4
+  - elapsed_fraction, expected_points
+  - contribution_rows(members, charter_items, entries, t), where entries are
+  EntryPoints(member_id, size, status)
+  - is_behind(row, team_median), team_median(rows), next_level(streak):
+  1 = private, 2+ = team
+  - Contribution dataclass: member_id, name, expected_points, actual_points,
+  progress_ratio (None if expected < 1), status
+  (not_started_yet | behind | on_track)
+- app/services/checkpoints.py (DB):
+  - team_contribution(session, team, t, cutoff) builds rows from records with
+  created_at <= cutoff. Status is computed from reviews up to the cutoff.
+  - evaluate_due_checkpoints(session, team_id):
+    - Only runs for locked charters. Takes checkpoints in order where t_now >= c and
+    no EvaluatedCheckpoint row exists.
+    - Each checkpoint is judged at t = c with cutoff = checkpoint datetime.
+    - Behind: streak += 1 and an Alert is created (created_at = checkpoint datetime).
+    - Not behind: streak = 0 and the member's open alerts are resolved.
+    - Commits per checkpoint.
+  - evaluate_all_teams(session) is called by POST /api/demo/time.
+  - A charter locked after checkpoints passed gets them evaluated retroactively on
+  the next call.
+- app/routers/warnings.py: both endpoints evaluate first.
+  - GET /api/teams/{id}/contribution -> {t, team_median, members}
+  - GET /api/teams/{id}/alerts?viewer_id= -> team alerts + the viewer's own private
+  alerts, created_at <= now, newest first, resolved ones included. viewer_id is
+  required; 400 if not in the team.
+- No teacher level anywhere (the user confirmed teacher was dropped).
+- Pylance fix: use sqlmodel col() for .desc()/.in_() and filter Optional ids from
+select(X.id).
+- Tests:
+  - tests/test_warnings.py: table-driven pure tests.
+  - tests/test_checkpoints.py: scenarios through demo time (uneven charter, zero-work,
+  stalls, escalation 1/2/3, recovery, streak reset, evaluated once, multi-checkpoint
+  jump, unlocked charter, visibility, contribution).
+  - 155 tests total.
+- Known limitation: moving demo time backwards does not undo evaluations. Streaks,
+EvaluatedCheckpoint and resolved flags stay; alerts still hide by created_at.
+- No overview endpoint exists yet. When it is built, it must call
+evaluate_due_checkpoints first.
+- API.md:
+  - Contribution model completed; "Contribution and alerts" section added.
+  - Model section fixed afterwards: Alert.level is "private" | "team" and the
+  checkpoint default is [0.33, 0.66]. API.md and RULES.md now agree.
+### 2026-10-03 - Phase B7: overview, demo reset and seed
+- Requirements were adapted to the current rules: checkpoints 0.33/0.66, no teacher.
+Health: red = open team alert, amber = disputed entry, else green. Private alerts
+never affect health.
+- app/services/warnings.py: team_health(open_team_alerts, disputed_entries), pure.
+- app/services/checkpoints.py: extracted entry_points(session, team_id, team_size,
+cutoff), used by team_contribution and the overview.
+- app/routers/overview.py: GET /api/assignments/{id}/overview ->
+{assignment (summary + join_url), t, teams: [{id, name, charter_locked,
+member_count, health, open_team_alerts, disputed_entries, flagged_pastes}]}.
+It evaluates due checkpoints for every team first. Counts use created_at <= now.
+- app/schemas.py: AssignmentSummaryOut (AssignmentOut now extends it with teams),
+TeamHealthOut, OverviewOut.
+- app/services/seed.py: reset_db(session) drops and recreates all tables via
+session.get_bind() and clears the clock. seed(session) resets, then writes rows
+directly with fixed timestamps and sets the clock to t=0.20.
+  - Assignment 1 "Engineering Design Report", 2026-09-07 -> 2026-10-19, join code
+  ENGDES.
+  - Group 7 (id 1): Maya 1, Jordan 2, Priya 3, Sam 4.
+    - Sam's first entry is at day 14.5, just after 33% (day 13.86).
+    - Priya's day-8 entry is left pending (1 of 2 confirms) for a live confirm.
+    - Jordan's 900-char unlabelled paste at t=0.15; the document holds that text.
+    - Jordan's "Wrote section 3 analysis" (day 17): Maya confirms, Priya disputes at
+    t=0.45.
+  - Group 3 (id 2): Alex 5, Ben 6, Chloe 7. Ben has no entries and no reviews.
+- Story at each step:
+  - t=0.20: both groups green.
+  - t=0.35: Sam and Ben private; both green.
+  - t=0.50: Group 7 amber (dispute).
+  - t=0.70: Sam resolved, Ben team; Group 7 amber, Group 3 red.
+- app/routers/demo.py:
+  - POST /api/demo/reset -> {"ok": true}
+  - POST /api/demo/seed -> overview of assignment 1
+- Tests: tests/test_seed.py (story, seeding twice identical, reset, overview ignores
+private/future) and test_team_health; 164 tests total.
+- Docs: API.md has Overview and demo reset/seed. RULES.md has a Team health section.
+README shows how to seed.

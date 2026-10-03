@@ -4,8 +4,8 @@ Source of truth for data models shared by backend and frontend.
 Do not change field names without updating this file.
 
 Conventions:
-- All paths start with `/api`. IDs are integers.
-- All timestamps are ISO 8601 strings.
+- All timestamps are ISO 8601 strings in UTC, returned with a `Z` suffix. Input without a timezone is treated as UTC.
+- Validation errors return `422`, missing resources return `404`.
 - `*_pct` values are fractions of the project timeline, `0.0`–`1.0`.
 - List endpoints hide any record with `created_at > now` (see [RULES.md](RULES.md#time)).
 
@@ -20,7 +20,7 @@ Conventions:
 | `start_date` | datetime | |
 | `due_date` | datetime | |
 | `join_code` | string | |
-| `checkpoints` | float[] | Default `[0.25, 0.5, 0.75]` |
+| `checkpoints` | float[] | Default `[0.33, 0.66]` |
 
 ### Team
 
@@ -125,7 +125,7 @@ One shared document per team.
 | `team_id` | int | |
 | `member_id` | int | |
 | `checkpoint` | float | |
-| `level` | `"private"` \| `"team"` \| `"teacher"` | |
+| `level` | `"private"` \| `"team"` | Streak 1 = private, 2+ = team |
 | `reason` | string | |
 | `created_at` | datetime | |
 | `resolved` | bool | |
@@ -140,90 +140,138 @@ Computed per member, not stored.
 | `name` | string | |
 | `expected_points` | float | |
 | `actual_points` | float | |
-| `progress_ratio` | float \| null | `actual / expected`; `null` when `expected_points` is 0 |
-| `status` | `"on_track"` \| `"behind"` \| `"not_started_yet"` | See RULES.md |
-
-## Response shapes
-
-Composite responses used by the endpoints below.
-
-### AssignmentCreated
-
-`Assignment` plus:
-
-| Field | Type | Notes |
-|---|---|---|
-| `join_url` | string | `http://localhost:5173/join/{join_code}` |
-
-### JoinInfo
-
-| Field | Type | Notes |
-|---|---|---|
-| `assignment` | Assignment | |
-| `teams` | Team[] | |
-
-### TeamDetail
-
-`Team` (including `charter_locked`) plus:
-
-| Field | Type | Notes |
-|---|---|---|
-| `members` | Member[] | |
-| `charter_items` | CharterItem[] | |
-
-### Overview
-
-| Field | Type | Notes |
-|---|---|---|
-| `assignment` | Assignment | |
-| `teams` | TeamOverview[] | |
-
-### TeamOverview
-
-| Field | Type | Notes |
-|---|---|---|
-| `team` | Team | |
-| `members` | Member[] | |
-| `health` | `"green"` \| `"amber"` \| `"red"` | red: any open teacher alert; amber: any open team alert or disputed entry; otherwise green |
-| `open_disputes` | int | Number of entries with status `"disputed"` |
-| `teacher_alerts` | Alert[] | Open alerts with level `"teacher"` |
-
-### DemoTime
-
-| Field | Type | Notes |
-|---|---|---|
-| `now` | datetime | Current clock value |
-| `overridden` | bool | `true` when the demo override is set |
+| `progress_ratio` | float \| null | `actual / expected`; `null` when `expected_points < 1` |
+| `status` | `"not_started_yet"` \| `"behind"` \| `"on_track"` | See RULES.md |
 
 ## Endpoints
 
-Errors use FastAPI's shape: `{"detail": "<message>"}`. Validation failures return
-400, a missing record 404.
+### Health
 
-| Method and path | Body | Returns | Notes |
+| Method | Path | Body | Response |
 |---|---|---|---|
-| `POST /assignments` | `title`, `start_date`, `due_date` | AssignmentCreated | Teacher creates an assignment. 400 unless `due_date > start_date`. |
-| `GET /assignments/{id}` | | Assignment | |
-| `GET /assignments/{id}/overview` | | Overview | Teacher dashboard: every team with members, health, open disputes and teacher-level alerts. |
-| `GET /join/{join_code}` | | JoinInfo | Assignment plus its teams, for the join page. |
-| `POST /assignments/{id}/teams` | `name` | Team | Create a team. |
-| `POST /teams/{id}/members` | `name` | Member | Join a team. |
-| `GET /teams/{id}` | | TeamDetail | Team, members, charter items and `charter_locked`. |
-| `PUT /teams/{id}/charter` | `items[]`: `member_id`, `responsibility`, `planned_points`, `start_pct`, `end_pct` | TeamDetail | Replace all charter items. 400 once locked. |
-| `POST /teams/{id}/charter/lock` | | TeamDetail | Locks the charter. Early warnings only run for locked charters. |
-| `GET /teams/{id}/entries` | | Entry[] | All entries with reviews and computed status, newest first. |
-| `POST /teams/{id}/entries` | `member_id`, `description`, `size`, `charter_item_id?`, `evidence[]` | Entry | |
-| `POST /entries/{id}/reviews` | `reviewer_id`, `verdict`, `note` | Entry | Returns the entry with its new status. 400 if reviewing your own entry or reviewing twice. A dispute requires a non-empty note. |
-| `GET /teams/{id}/document` | | Document | Current shared document; created empty on first GET. |
-| `PUT /teams/{id}/document` | `member_id`, `content_html`, `content_text` | Document | Autosave. |
-| `POST /teams/{id}/pastes` | `member_id`, `kind`, `char_count`, `preview`, `is_internal` | PasteEvent | Record a paste or burst. |
-| `PATCH /pastes/{id}/label` | `member_id`, `label`, `label_note` | PasteEvent | Label a paste. Only the paster may label (403 otherwise). Clears `flagged`. |
-| `GET /teams/{id}/pastes` | | PasteEvent[] | All non-internal paste events, newest first. |
-| `GET /teams/{id}/contribution` | | Contribution[] | One row per member at the current time. |
-| `GET /teams/{id}/alerts?viewer_id=` | | Alert[] | Only the alerts this viewer may see (see RULES.md). `viewer_id=teacher` shows teacher-level alerts. |
-| `GET /demo/time` | | DemoTime | Current clock value and whether it is overridden. |
-| `POST /demo/time` | `now` | DemoTime | Overrides the clock and runs any due checkpoint evaluations. |
-| `POST /demo/seed` | | `{"ok": true}` | Wipe and load the demo story. |
-| `POST /demo/reset` | | `{"ok": true}` | Wipe everything. |
+| GET | `/api/health` | | `{"ok": true}` |
 
-Entries and reviews are append-only: there are no update or delete endpoints for them.
+### Assignments and teams
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| POST | `/api/assignments` | `{title, start_date, due_date, checkpoints?}` | `201` AssignmentDetail |
+| GET | `/api/assignments/{id}` | | AssignmentDetail |
+| GET | `/api/join/{join_code}` | | AssignmentDetail (code is case-insensitive) |
+| POST | `/api/assignments/{id}/teams` | `{name}` | `201` [Team](#team) |
+| POST | `/api/teams/{id}/members` | `{name}` | `201` [Member](#member) |
+| GET | `/api/teams/{id}` | | TeamDetail |
+
+- `POST /api/assignments`: `due_date` must be after `start_date`. `checkpoints` are optional, each must be strictly between 0 and 1, and they are stored sorted. The server generates a 6-character `join_code` from `A–Z` and `2–9`, leaving out the look-alike characters `0`, `O`, `1` and `I`.
+- **AssignmentDetail** = [Assignment](#assignment) fields + `join_url` (`http://localhost:5173/join/{join_code}`) + `teams: Team[]`.
+- **TeamDetail** = [Team](#team) fields + `members: Member[]` + `charter_items: CharterItem[]`.
+
+### Charter
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| PUT | `/api/teams/{id}/charter` | `{items: [{member_id, responsibility, planned_points, start_pct, end_pct}]}` | TeamDetail |
+| POST | `/api/teams/{id}/charter/lock` | | TeamDetail |
+
+- PUT replaces the whole charter. Replaced items get new ids.
+- Rule violations return `400` with a `detail` message such as `"Charter item 2: planned_points must be greater than 0"`. If any item is invalid, nothing is saved. The rules:
+  - `0 <= start_pct < end_pct <= 1`
+  - `planned_points > 0`
+  - `responsibility` is not blank
+  - `member_id` belongs to this team
+  - the charter is not locked
+- Lock returns `400` if the charter is empty or already locked. A locked charter cannot be unlocked.
+
+### Ledger
+
+Append-only. There are no update or delete endpoints for entries or reviews.
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| POST | `/api/teams/{id}/entries` | `{member_id, description, size, charter_item_id?, evidence?: [{kind, ref, label?}]}` | `201` [Entry](#entry) |
+| GET | `/api/teams/{id}/entries` | | [Entry](#entry)[], newest first |
+| POST | `/api/entries/{id}/reviews` | `{reviewer_id, verdict, note?}` | `201` the updated [Entry](#entry) |
+
+- `created_at` is always set by the server from the clock. Clients never send it.
+- GET hides entries with `created_at > now`. Each entry includes only reviews with `created_at <= now`, and `status` is computed from those reviews, so moving demo time back replays the history.
+- Entry rules (`400` on violation):
+  - `member_id` is in the team
+  - `description` is not blank
+  - `size` is `S`, `M` or `L`
+  - each evidence item has a valid `kind` and a non-blank `ref`
+  - `charter_item_id`, if given, belongs to the team, and the charter must be locked
+- Review rules (`400` on violation):
+  - the reviewer is in the entry's team and is not the author
+  - `verdict` is `confirm` or `dispute`
+  - a dispute needs a non-blank `note`
+  - one review per reviewer per entry, ever. Reviews that are hidden by demo time still count.
+- Reviewing an entry that doesn't exist or is hidden by demo time returns `404`.
+
+### Document and pastes
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/api/teams/{id}/document` | | [Document](#document) (created empty on first GET) |
+| PUT | `/api/teams/{id}/document` | `{member_id, content_html, content_text}` | [Document](#document) |
+| POST | `/api/teams/{id}/pastes` | `{member_id, kind, char_count, preview, is_internal, label?, label_note?}` | `201` [PasteEvent](#pasteevent) |
+| GET | `/api/teams/{id}/pastes` | | [PasteEvent](#pasteevent)[], newest first |
+| PATCH | `/api/pastes/{id}/label` | `{member_id, label, label_note?}` | [PasteEvent](#pasteevent) |
+
+- Document PUT overwrites the whole document. The server sets `updated_at` to now and `updated_by` to `member_id`. `member_id` must be in the team (`400`).
+- Paste POST:
+  - The frontend detects pastes and bursts and decides `is_internal`. The backend trusts that and doesn't recheck the 200/300-character thresholds.
+  - The server cuts `preview` to 120 characters, sets `created_at` to now and computes `flagged = not is_internal and label is null`.
+  - `400` if the member isn't in the team, `kind` isn't `paste`/`burst`, `label` isn't one of the allowed values, or `char_count` is negative.
+- Paste GET returns only events that are not internal and have `created_at <= now`.
+- Label PATCH:
+  - Only the member who pasted may label (`403` otherwise). `label` must be `my_notes`, `quote`, `moved` or `other` (`400`).
+  - Labelling sets `flagged = false`.
+  - A paste that doesn't exist or is hidden by demo time returns `404`.
+
+### Contribution and alerts
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/api/teams/{id}/contribution` | | `{t, team_median, members: Contribution[]}` |
+| GET | `/api/teams/{id}/alerts?viewer_id={member_id}` | | [Alert](#alert)[], newest first |
+
+- Both endpoints first run any checkpoints that are due (see RULES.md). `POST /api/demo/time` also runs them for every team.
+- Contribution is computed at the current `t` from entries and reviews with `created_at <= now`. `team_median` is `null` when no member has `expected_points >= 1`.
+- Alerts:
+  - `viewer_id` is required (`422` if missing) and must be a member of the team (`400` otherwise).
+  - The viewer sees `team` alerts plus `private` alerts about themselves.
+  - Only alerts with `created_at <= now` are returned. An alert's `created_at` is the moment of its checkpoint.
+  - Resolved alerts are included, with `resolved: true`.
+
+### Overview
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/api/assignments/{id}/overview` | | `{assignment, t, teams: TeamHealth[]}` |
+
+- `assignment` = [Assignment](#assignment) fields + `join_url`.
+- **TeamHealth** = `{id, name, charter_locked, member_count, health, open_team_alerts, disputed_entries, flagged_pastes}`.
+- `health` (see RULES.md):
+  - `red` if any open `team` alert
+  - `amber` if any disputed entry
+  - otherwise `green`
+- Private alerts never count towards `health`.
+- Counts only include records with `created_at <= now`. Due checkpoints are run for each team first.
+
+### Demo time
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/api/demo/time` | | `{now, overridden}` |
+| POST | `/api/demo/time` | `{now: datetime \| null}` | `{now, overridden}` |
+
+- `now: null` clears the override and returns to real UTC time.
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| POST | `/api/demo/reset` | | `{"ok": true}` |
+| POST | `/api/demo/seed` | | Overview of the seeded assignment (id `1`) |
+
+- Reset drops and recreates every table, so ids restart at 1, and clears the clock override.
+- Seed resets, loads the demo story (assignment "Engineering Design Report", join code `ENGDES`, Group 7 and Group 3) and sets the clock to t = 0.20. All seeded timestamps are fixed, so seeding twice gives identical data.
+- After changing the time, runs due checkpoint evaluation for every team with a locked charter.

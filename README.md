@@ -11,13 +11,19 @@ early warnings at time checkpoints when someone falls behind their own plan.
 
 ```bash
 cd backend
-python3.11 -m venv .venv
+python3.11 -m venv .venv   # any Python >= 3.11 works
 source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
 API at http://localhost:8000, interactive docs at http://localhost:8000/docs.
+
+Load the demo story (wipes the database, sets demo time to 20% of the timeline):
+
+```bash
+curl -X POST localhost:8000/api/demo/seed
+```
 
 Run tests:
 
