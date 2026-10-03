@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type DependencyList } from "react";
+import { onRefreshAll } from "../lib/refresh";
 
 const POLL_MS = 3000;
 
@@ -7,6 +8,7 @@ const POLL_MS = 3000;
 // responses never overlap. A failed refresh keeps the last good data.
 // `refresh()` polls again immediately, e.g. after the user changes data. If a
 // poll is already running it may predate the change, so one more follows it.
+// refreshAll() (lib/refresh.ts) does the same for every hook on the page.
 export function usePolling<T>(load: () => Promise<T>, deps: DependencyList) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -54,6 +56,8 @@ export function usePolling<T>(load: () => Promise<T>, deps: DependencyList) {
       clearTimeout(timer);
     };
   }, deps);
+
+  useEffect(() => onRefreshAll(() => kick.current()), []);
 
   const refresh = useCallback(() => kick.current(), []);
   return { data, error, refresh };

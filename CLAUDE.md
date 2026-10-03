@@ -273,3 +273,29 @@ README shows how to seed.
   ladder states, tooltip, no console errors. Screenshots checked.
 - Open: no dark mode anywhere in the app (light only). Mock alerts are fixtures; the
   mock does not run checkpoint evaluation.
+### 2026-10-03 - Phase F7: demo control panel
+- src/components/DemoPanel.tsx, mounted in Layout so it is on every page. Fixed
+  bottom-right, small neutral styling. D toggles it fully hidden/shown (ignored while
+  typing in inputs/textareas/selects/the editor); the header collapses it to one
+  line ("Demo · 41%"). Visibility is remembered in localStorage.
+  - Time: range slider over the assignment start..due with checkpoint ticks; the
+    readout (date + %) follows the drag, POST /demo/time on release (pointer or
+    keyboard). "Jump to N% checkpoint" sets the time 1 hour past the next checkpoint.
+    Shows "Demo time" vs "Real time" (overridden flag).
+  - Which assignment: the one in the URL (/teacher/:id, or the team's on /team/:id),
+    else assignment 1 (the seeded demo).
+  - View as: Maya 1, Jordan 2, Priya 3, Sam 4, Teacher (ids match both the mock
+    fixtures and the backend seed).
+  - Seed demo; Reset asks "Wipe everything?" first.
+- Refresh: src/lib/refresh.ts refreshAll() fires a window event that every
+  usePolling hook listens for, so a time change updates all polled screens at once
+  (measured ~150 ms vs the 3 s poll). After seed/reset, Layout bumps a key that
+  remounts the header + page, so load-once screens (charter, document) reload too;
+  the panel sits outside that key and keeps its state.
+- Verified in headless Edge against mocks: 37/37 checks (show/hide/collapse, D
+  ignored while typing, user buttons, slider -> hero/alerts/ledger time-travel,
+  jumps, seed, reset + confirm, panel on every page, hidden state persists), no
+  console errors.
+- Open: mocks don't run checkpoint evaluation, so moving time only shows/hides the
+  fixture alerts; the real escalation story needs the backend (I1/I2). The mock seed
+  reloads the F1 fixtures, not the backend's "Engineering Design Report" story.
