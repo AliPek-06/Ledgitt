@@ -1,4 +1,4 @@
-# Ledger - hackathon project
+# Ledgitt - hackathon project
 Group-work contribution tracker. Teams agree a charter (who does what, when), log
 contributions in an append-only ledger that teammates confirm or dispute, and get
 early warnings at time checkpoints when someone falls behind their own plan.
@@ -414,3 +414,71 @@ plus home, join, new assignment, 404 page. No errors or warnings, only React's
 DevTools info line.
 - Note for automation: some scripted clicks on Confirm didn't register, but a JS
 .click() and the handler (plain onClick) work. This was not reproduced as an app bug.
+### 2026-10-03 - Rename: app is "Ledgitt"
+- Product name changed from "Ledger" to "Ledgitt":
+  - header brand (Layout.tsx), <title> (index.html), Home placeholder title
+  - FastAPI title "Ledgitt API"
+  - headings in README, CLAUDE.md, docs/API.md and docs/RULES.md
+  - seed.py docstring
+  - frontend package name "ledgitt-frontend" (package.json and package-lock.json)
+- "Ledger" as the feature (the Ledger tab, the API.md "Ledger" section, append-only
+ledger wording) is unchanged.
+- Internal identifiers were kept so nothing breaks: backend/ledger.db, and the
+localStorage keys ledger.currentUser / ledger.demoPanel / ledger.memberNames.
+### 2026-10-03 - Guided presentation mode (/demo), frontend only
+- Route /demo (App.tsx, lazy-loaded, outside Layout, so there is no header or
+DemoPanel and the live app never loads its code or CSS). There are no network
+calls: all data comes from frontend/src/demo/script.ts.
+- Files:
+  - src/demo/script.ts: fixture (Group 7, charter, 5-paragraph printing-press
+  document, paste 890 chars, entries, alerts, contribution at t=0.665, teacher
+  overview with Groups 7/3/5) plus the 15 steps (section, caption, viewer, duration).
+  - src/demo/scenes.tsx: one scene per section, each a pure function of (step,
+  elapsed ms). elapsed = Infinity is the finished state.
+  - src/demo/DemoPresentation.tsx: keys, step clock, top section bar, "Viewing as"
+  badge, caption bar, step counter. The 1280x720 stage is scaled to the window.
+  - src/demo/demo.css: animations scoped under .demo-stage.
+- How animation works:
+  - Thresholds on elapsed toggle state, and CSS transitions/keyframes animate it.
+  Every step's duration is < 1.5 s.
+  - "Finish now" sets settled = true, and the .demo-settled class turns off all
+  transitions and animations.
+  - Going back renders the previous step settled.
+  - Scenes are keyed by section, so within a section only new things animate.
+  - Key handlers read posRef, so fast double presses never act on a stale step, and
+  "still animating" is judged with performance.now() at keypress time.
+  - The clock ticks with setInterval plus a final timeout, not requestAnimationFrame,
+  which pauses in hidden tabs.
+- Live components split into presentational views + containers (live behaviour
+unchanged and verified):
+  - EntryCardView (EntryCard keeps reviewing + DisputeModal).
+  - LabelPasteForm (LabelPasteModal keeps state + labelPaste).
+  - LogWorkFormView + LogWorkValues (LogWorkForm keeps state + createEntry).
+  `compact` prop, default false, used only by the demo: sizes in one row, no hints,
+  2-row textarea, no footer note.
+  - DocumentFrame (the box + header bar, from DocumentEditor).
+  - TeacherOverview (TeacherAssignment fetches). `interactive={false}` renders plain
+  cards without links or setCurrentUser.
+  - The demo reuses CharterTimeline, FlaggedPastesPanel, AlertsBanner,
+  ProgressTimeline, ContributionChart, EscalationLadder and displayStatus as-is.
+- Per-section zoom (SCENE_ZOOM) was measured against the 540px content area at each
+section's tallest step.
+- The Progress step composes the dashboard's parts (chart + timeline + ladder),
+because the full ProgressTab is ~1400px tall. A ProgressView split was tried and
+reverted, so ProgressTab is unchanged.
+- Deviations from the brief:
+  - The title card says "Ledgitt" (the app was renamed), not "Ledger".
+  - Step 12 reuses the real AlertsBanner, so it reads "Sam has some catching up to
+  do. At the 66% checkpoint: …" rather than the scripted "Sam is behind his plan for
+  this stage".
+- Verified:
+  - All 15 finished states (DOM).
+  - Forward vs back screens identical for every step.
+  - Enter/Space mid-animation finishes the step, then advances.
+  - R, H and Esc work.
+  - No console errors and no :8000 requests on /demo.
+  - Live ledger confirm/log, label pop-up and teacher links work against the
+  backend.
+  - Production build ok (Demo chunk 20 kB JS + 1 kB CSS).
+- Note: the automation browser tab was "hidden", which throttles timers and painting.
+Mid-animation screenshots lag there; a visible presenter tab animates normally.

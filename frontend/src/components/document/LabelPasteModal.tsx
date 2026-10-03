@@ -37,6 +37,36 @@ export default function LabelPasteModal({ paste, me, onLabelled, onClose }: Prop
     }
   }
 
+  return (
+    <LabelPasteForm
+      paste={paste}
+      label={label}
+      note={note}
+      busy={busy}
+      error={error}
+      onLabel={setLabel}
+      onNote={setNote}
+      onSubmit={submit}
+      onClose={onClose}
+    />
+  );
+}
+
+interface FormProps {
+  paste: PasteEvent;
+  label: PasteLabel | null;
+  note: string;
+  busy?: boolean;
+  error?: string | null;
+  onLabel: (label: PasteLabel) => void;
+  onNote: (note: string) => void;
+  onSubmit: () => void;
+  onClose: () => void;
+}
+
+// Presentational dialog: no API calls. LabelPasteModal holds the state and
+// saves; the /demo presentation drives it with scripted values.
+export function LabelPasteForm({ paste, label, note, busy = false, error = null, onLabel, onNote, onSubmit, onClose }: FormProps) {
   const what = paste.kind === "paste" ? "pasted" : "added very quickly";
   const placeholder = OPTIONS.find((o) => o.value === label)?.notePlaceholder ?? "Optional note";
 
@@ -60,7 +90,7 @@ export default function LabelPasteModal({ paste, me, onLabelled, onClose }: Prop
               type="radio"
               name="paste-label"
               checked={label === o.value}
-              onChange={() => setLabel(o.value)}
+              onChange={() => onLabel(o.value)}
               className="accent-accent"
             />
             <span className="font-medium">{o.label}</span>
@@ -70,7 +100,7 @@ export default function LabelPasteModal({ paste, me, onLabelled, onClose }: Prop
 
       <input
         value={note}
-        onChange={(e) => setNote(e.target.value)}
+        onChange={(e) => onNote(e.target.value)}
         placeholder={placeholder}
         aria-label="Note"
         className="mt-4 w-full rounded-lg border border-stone-300 px-4 py-3 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
@@ -83,7 +113,7 @@ export default function LabelPasteModal({ paste, me, onLabelled, onClose }: Prop
           Later
         </button>
         <button
-          onClick={submit}
+          onClick={onSubmit}
           disabled={!label || busy}
           className="rounded-lg bg-accent px-5 py-3 font-medium text-white hover:bg-accent-strong disabled:opacity-50"
         >

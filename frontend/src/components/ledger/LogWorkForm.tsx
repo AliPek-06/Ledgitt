@@ -9,7 +9,7 @@ interface Props {
   onLogged: () => void;
 }
 
-interface LinkRow {
+export interface LinkRow {
   url: string;
   label: string;
 }
@@ -42,14 +42,9 @@ export default function LogWorkForm({ team, me, onLogged }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [justLogged, setJustLogged] = useState(false);
 
-  const myItems = team.charter_items.filter((c) => c.member_id === me.id);
   const filledLinks = links.filter((l) => l.url.trim() !== "");
   const badLink = filledLinks.some((l) => normaliseUrl(l.url) === null);
   const canSubmit = description.trim() !== "" && !badLink && !submitting;
-
-  function setLink(i: number, patch: Partial<LinkRow>) {
-    setLinks((ls) => ls.map((l, j) => (j === i ? { ...l, ...patch } : l)));
-  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -83,6 +78,66 @@ export default function LogWorkForm({ team, me, onLogged }: Props) {
   }
 
   return (
+    <LogWorkFormView
+      team={team}
+      me={me}
+      values={{ description, size, charterItemId, links }}
+      onChange={(patch) => {
+        if (patch.description !== undefined) setDescription(patch.description);
+        if (patch.size !== undefined) setSize(patch.size);
+        if (patch.charterItemId !== undefined) setCharterItemId(patch.charterItemId);
+        if (patch.links !== undefined) setLinks(patch.links);
+      }}
+      error={error}
+      submitting={submitting}
+      justLogged={justLogged}
+      canSubmit={canSubmit}
+      onSubmit={onSubmit}
+    />
+  );
+}
+
+export interface LogWorkValues {
+  description: string;
+  size: EntrySize;
+  charterItemId: number | null;
+  links: LinkRow[];
+}
+
+interface ViewProps {
+  team: TeamDetail;
+  me: Member;
+  values: LogWorkValues;
+  onChange: (patch: Partial<LogWorkValues>) => void;
+  error?: string | null;
+  submitting?: boolean;
+  justLogged?: boolean;
+  canSubmit: boolean;
+  onSubmit: (e: FormEvent) => void;
+  // Shorter layout for the /demo presentation: sizes in one row, no hints.
+  compact?: boolean;
+}
+
+// Presentational form: no API calls. LogWorkForm holds the state and submits;
+// the /demo presentation fills it in with scripted values.
+export function LogWorkFormView({
+  team,
+  me,
+  values,
+  onChange,
+  error = null,
+  submitting = false,
+  justLogged = false,
+  canSubmit,
+  onSubmit,
+  compact = false,
+}: ViewProps) {
+  const { description, size, charterItemId, links } = values;
+  const myItems = team.charter_items.filter((c) => c.member_id === me.id);
+  const setLink = (i: number, patch: Partial<LinkRow>) =>
+    onChange({ links: links.map((l, j) => (j === i ? { ...l, ...patch } : l)) });
+
+  return (
     <form onSubmit={onSubmit} className="space-y-5 rounded-xl border border-stone-200 bg-white p-6">
       <h2 className="text-xl font-semibold">Log your work</h2>
 
@@ -90,8 +145,8 @@ export default function LogWorkForm({ team, me, onLogged }: Props) {
         <span className="font-medium">What did you do?</span>
         <textarea
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={3}
+          onChange={(e) => onChange({ description: e.target.value })}
+          rows={compact ? 2 : 3}
           placeholder="e.g. Drafted the sampling subsection"
           className={`${input} mt-2`}
         />
@@ -99,7 +154,7 @@ export default function LogWorkForm({ team, me, onLogged }: Props) {
 
       <fieldset>
         <legend className="font-medium">How big was it?</legend>
-        <div className="mt-2 space-y-2">
+        <div className={compact ? "mt-2 grid grid-cols-3 gap-2" : "mt-2 space-y-2"}>
           {(Object.keys(SIZES) as EntrySize[]).map((s) => (
             <label
               key={s}
@@ -111,7 +166,7 @@ export default function LogWorkForm({ team, me, onLogged }: Props) {
                 type="radio"
                 name="size"
                 checked={size === s}
-                onChange={() => setSize(s)}
+                onChange={() => onChange({ size: s })}
                 className="mt-1.5 accent-accent"
               />
               <span>
@@ -119,7 +174,7 @@ export default function LogWorkForm({ team, me, onLogged }: Props) {
                   {s} · {SIZES[s].label}
                 </span>{" "}
                 <span className="text-stone-500">({SIZES[s].points} pt{SIZES[s].points > 1 ? "s" : ""})</span>
-                <span className="block text-sm text-stone-600">{SIZES[s].hint}</span>
+                {!compact && <span className="block text-sm text-stone-600">{SIZES[s].hint}</span>}
               </span>
             </label>
           ))}
@@ -132,7 +187,7 @@ export default function LogWorkForm({ team, me, onLogged }: Props) {
           <span className="text-stone-500">(optional)</span>
           <select
             value={charterItemId ?? ""}
-            onChange={(e) => setCharterItemId(e.target.value === "" ? null : Number(e.target.value))}
+            onChange={(e) => onChange({ charterItemId: e.target.value === "" ? null : Number(e.target.value) })}
             className={`${input} mt-2 bg-white`}
           >
             <option value="">Not linked to a charter item</option>
@@ -169,7 +224,7 @@ export default function LogWorkForm({ team, me, onLogged }: Props) {
                   />
                   <button
                     type="button"
-                    onClick={() => setLinks((ls) => ls.filter((_, j) => j !== i))}
+                    onClick={() => onChange({ links: links.filter((_, j) => j !== i) })}
                     className="px-2 text-stone-500 hover:text-stone-800"
                   >
                     Remove
@@ -181,7 +236,7 @@ export default function LogWorkForm({ team, me, onLogged }: Props) {
           })}
           <button
             type="button"
-            onClick={() => setLinks((ls) => [...ls, { url: "", label: "" }])}
+            onClick={() => onChange({ links: [...links, { url: "", label: "" }] })}
             className="font-medium text-accent hover:underline"
           >
             + Add a link
@@ -198,7 +253,7 @@ export default function LogWorkForm({ team, me, onLogged }: Props) {
       >
         {submitting ? "Logging…" : justLogged ? "Logged ✓" : "Log it"}
       </button>
-      <p className="text-sm text-stone-500">Teammates confirm entries before they count toward progress.</p>
+      {!compact && <p className="text-sm text-stone-500">Teammates confirm entries before they count toward progress.</p>}
     </form>
   );
 }

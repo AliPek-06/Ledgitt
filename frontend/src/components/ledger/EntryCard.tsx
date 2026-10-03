@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ApiError, createReview } from "../../api/client";
 import type { Entry, Member, ReviewVerdict, TeamDetail } from "../../api/types";
 import { EVIDENCE_LABEL, SIZES, STATUS_STYLE, confirmsNeeded } from "../../lib/entries";
@@ -19,10 +19,6 @@ export default function EntryCard({ entry, team, me, onReviewed }: Props) {
 
   const nameOf = (id: number) =>
     id === me?.id ? "You" : (team.members.find((m) => m.id === id)?.name ?? `Member ${id}`);
-  const charterItem = team.charter_items.find((c) => c.id === entry.charter_item_id);
-  const status = STATUS_STYLE[entry.status];
-  const confirms = entry.reviews.filter((r) => r.verdict === "confirm").length;
-  const needed = confirmsNeeded(team.members.length);
 
   // Hidden on your own entries, after you've reviewed, and for read-only viewers.
   const canReview =
@@ -42,6 +38,68 @@ export default function EntryCard({ entry, team, me, onReviewed }: Props) {
       setBusy(false);
     }
   }
+
+  return (
+    <EntryCardView entry={entry} team={team} me={me}>
+      {canReview && (
+        <div className="mt-4 flex gap-3">
+          <button
+            onClick={() => review("confirm")}
+            disabled={busy}
+            className="rounded-lg bg-accent px-4 py-2 font-medium text-white hover:bg-accent-strong disabled:opacity-50"
+          >
+            Confirm
+          </button>
+          <button
+            onClick={() => {
+              setError(null);
+              setDisputing(true);
+            }}
+            disabled={busy}
+            className="rounded-lg border border-stone-300 px-4 py-2 font-medium text-stone-700 hover:border-stone-400 disabled:opacity-50"
+          >
+            Dispute
+          </button>
+        </div>
+      )}
+
+      {error && !disputing && <p className="mt-3 rounded-lg bg-amber-50 px-4 py-2 text-amber-900">{error}</p>}
+
+      {disputing && (
+        <DisputeModal
+          authorName={nameOf(entry.member_id)}
+          description={entry.description}
+          busy={busy}
+          error={error}
+          onSubmit={(note) => review("dispute", note)}
+          onClose={() => {
+            if (busy) return;
+            setDisputing(false);
+            setError(null);
+          }}
+        />
+      )}
+    </EntryCardView>
+  );
+}
+
+interface ViewProps {
+  entry: Entry;
+  team: TeamDetail;
+  me?: Member;
+  // Review buttons, errors or a modal from the container (none in the demo).
+  children?: ReactNode;
+}
+
+// Presentational card: no API calls. EntryCard adds reviewing; the /demo
+// presentation renders this directly with scripted entries.
+export function EntryCardView({ entry, team, me, children }: ViewProps) {
+  const nameOf = (id: number) =>
+    id === me?.id ? "You" : (team.members.find((m) => m.id === id)?.name ?? `Member ${id}`);
+  const charterItem = team.charter_items.find((c) => c.id === entry.charter_item_id);
+  const status = STATUS_STYLE[entry.status];
+  const confirms = entry.reviews.filter((r) => r.verdict === "confirm").length;
+  const needed = confirmsNeeded(team.members.length);
 
   return (
     <article className="rounded-xl border border-stone-200 bg-white p-6">
@@ -101,45 +159,7 @@ export default function EntryCard({ entry, team, me, onReviewed }: Props) {
           {confirms} of {needed} confirmation{needed === 1 ? "" : "s"} needed
         </p>
       )}
-
-      {canReview && (
-        <div className="mt-4 flex gap-3">
-          <button
-            onClick={() => review("confirm")}
-            disabled={busy}
-            className="rounded-lg bg-accent px-4 py-2 font-medium text-white hover:bg-accent-strong disabled:opacity-50"
-          >
-            Confirm
-          </button>
-          <button
-            onClick={() => {
-              setError(null);
-              setDisputing(true);
-            }}
-            disabled={busy}
-            className="rounded-lg border border-stone-300 px-4 py-2 font-medium text-stone-700 hover:border-stone-400 disabled:opacity-50"
-          >
-            Dispute
-          </button>
-        </div>
-      )}
-
-      {error && !disputing && <p className="mt-3 rounded-lg bg-amber-50 px-4 py-2 text-amber-900">{error}</p>}
-
-      {disputing && (
-        <DisputeModal
-          authorName={nameOf(entry.member_id)}
-          description={entry.description}
-          busy={busy}
-          error={error}
-          onSubmit={(note) => review("dispute", note)}
-          onClose={() => {
-            if (busy) return;
-            setDisputing(false);
-            setError(null);
-          }}
-        />
-      )}
+      {children}
     </article>
   );
 }

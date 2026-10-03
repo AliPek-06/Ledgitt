@@ -1,4 +1,4 @@
-"""Demo data: the Ledger story (see CLAUDE.md, phase B7).
+"""Demo data: the Ledgitt story (see CLAUDE.md, phase B7).
 
 Timeline: 2026-09-07 -> 2026-10-19 (6 weeks), checkpoints 0.33 / 0.66.
 Group 7: Sam does nothing until just after 33% (private alert), then catches up

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import type { Transaction } from "@tiptap/pm/state";
@@ -168,17 +168,40 @@ export default function DocumentEditor({ teamId, initial, me, onPasteEvent }: Pr
   }, [editor, remote, saveState]);
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white">
-      <div className="flex items-center justify-between border-b border-stone-100 px-6 py-3 text-sm">
-        <span className="text-stone-500">{me ? "Everyone in the team edits this document." : "Read-only"}</span>
-        {me && (
+    <DocumentFrame
+      editable={me !== undefined}
+      status={
+        me && (
           <span className={saveState === "error" ? "text-amber-800" : "text-stone-500"} aria-live="polite">
             {saveState === "saved" && <span className="text-emerald-600">✓ </span>}
             {SAVE_LABEL[saveState]}
           </span>
-        )}
-      </div>
+        )
+      }
+    >
       <EditorContent editor={editor} className="px-8 py-6" />
+    </DocumentFrame>
+  );
+}
+
+// The document's box and header bar, shared with the /demo presentation's
+// static document view.
+export function DocumentFrame({
+  editable,
+  status,
+  children,
+}: {
+  editable: boolean;
+  status?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-stone-200 bg-white">
+      <div className="flex items-center justify-between border-b border-stone-100 px-6 py-3 text-sm">
+        <span className="text-stone-500">{editable ? "Everyone in the team edits this document." : "Read-only"}</span>
+        {status}
+      </div>
+      {children}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-# Ledger business rules
+# Ledgitt business rules
 
 Every rule here gets a pytest test.
 

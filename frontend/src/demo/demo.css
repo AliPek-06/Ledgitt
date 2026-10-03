@@ -1,0 +1,93 @@
+/* Styles for the /demo presentation only. Everything is scoped under .demo-stage
+   so the live app is untouched. Every animation is under 1.5 s. */
+
+/* "Finish now": a settled step drops all transitions and keyframes, so every
+   element jumps straight to its final state. */
+.demo-settled *,
+.demo-settled *::before,
+.demo-settled *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Elements that fade/slide in when they mount. */
+@keyframes demo-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.demo-pop,
+.demo-pop-items li {
+  animation: demo-pop 450ms ease-out backwards;
+}
+
+@keyframes demo-fade {
+  from {
+    opacity: 0;
+  }
+}
+.demo-fade {
+  animation: demo-fade 500ms ease-out backwards;
+}
+
+/* Charter bars draw across instead of the timeline's quick default. */
+.demo-charter .bg-accent {
+  transition:
+    width 700ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    left 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* The project timeline glides to the next checkpoint. */
+.demo-timeline [style*="left"],
+.demo-timeline [style*="width"] {
+  transition:
+    left 1100ms cubic-bezier(0.4, 0, 0.2, 1),
+    width 1100ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Lock: the shackle snaps shut. */
+@keyframes demo-shackle {
+  from {
+    transform: translateY(-5px);
+  }
+  60% {
+    transform: translateY(1px);
+  }
+}
+.demo-shackle {
+  animation: demo-shackle 500ms 200ms ease-out backwards;
+}
+@keyframes demo-lock-in {
+  from {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+.demo-lock {
+  animation: demo-lock-in 400ms ease-out backwards;
+}
+
+/* Authorship tints and the paste outline change smoothly. */
+.demo-para {
+  transition:
+    background-color 600ms ease,
+    outline-color 500ms ease,
+    box-shadow 500ms ease;
+}
+
+/* Typing caret. */
+@keyframes demo-caret {
+  50% {
+    opacity: 0;
+  }
+}
+.demo-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: -0.1em;
+  background: currentColor;
+  animation: demo-caret 900ms steps(1) infinite;
+}

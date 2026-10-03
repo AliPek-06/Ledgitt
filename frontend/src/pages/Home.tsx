@@ -12,7 +12,7 @@ const LINKS = [
 
 export default function Home() {
   return (
-    <Placeholder title="Ledger">
+    <Placeholder title="Ledgitt">
       <ul className="mt-4 list-disc pl-6">
         {LINKS.map(([to, label]) => (
           <li key={to}>

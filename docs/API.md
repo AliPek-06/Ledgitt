@@ -1,4 +1,4 @@
-# Ledger API contract
+# Ledgitt API contract
 
 Source of truth for data models shared by backend and frontend.
 Do not change field names without updating this file.

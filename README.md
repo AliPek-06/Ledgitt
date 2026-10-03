@@ -1,4 +1,4 @@
-# Ledger
+# Ledgitt
 
 Group-work contribution tracker. Teams agree a charter (who does what, when), log
 contributions in an append-only ledger that teammates confirm or dispute, and get
@@ -47,3 +47,20 @@ To run the frontend without the backend, using the Group 7 fixtures in
 ```bash
 npm run dev:mocks          # or set VITE_USE_MOCKS=true in frontend/.env.local
 ```
+
+## Guided presentation
+
+Open http://localhost:5173/demo for a presenter-driven walkthrough of the whole
+story (charter, document, ledger, checkpoints, progress, teacher) in about two
+minutes. It uses scripted data only, so the backend does not need to be running.
+
+| Key | Action |
+|---|---|
+| Enter / Space / → | Next step (or finish the current animation) |
+| ← | Previous step |
+| R | Restart |
+| H | Hide/show the caption bar |
+| Esc | Exit to the normal app |
+
+Press F11 (Ctrl+Cmd+F on a Mac) for browser fullscreen; the 1280x720 stage scales
+to fit any screen.

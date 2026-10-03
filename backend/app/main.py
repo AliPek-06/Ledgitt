@@ -15,7 +15,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Ledger API", lifespan=lifespan)
+app = FastAPI(title="Ledgitt API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

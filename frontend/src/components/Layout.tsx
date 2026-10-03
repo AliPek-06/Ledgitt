@@ -15,7 +15,7 @@ export default function Layout() {
         <header className="flex items-center justify-between border-b border-stone-200 bg-white px-8 py-4">
           <div className="flex items-center gap-3">
             <Link to="/" className="text-xl font-semibold text-accent">
-              Ledger
+              Ledgitt
             </Link>
             {USE_MOCKS && (
               <span className="rounded bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">

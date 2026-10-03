@@ -1,6 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { ApiError, getOverview } from "../api/client";
-import type { TeamHealth, TeamOverview } from "../api/types";
+import type { Overview, TeamHealth, TeamOverview } from "../api/types";
 import { useCurrentUser } from "../context/CurrentUserContext";
 import { usePolling } from "../hooks/usePolling";
 import { formatDateRange, plural } from "../lib/format";
@@ -28,6 +28,20 @@ export default function TeacherAssignment() {
     );
   }
 
+  return <TeacherOverview overview={overview} stale={Boolean(error)} />;
+}
+
+// Presentational dashboard: no API calls. `interactive` makes team cards links
+// into the workspace (off in the /demo presentation).
+export function TeacherOverview({
+  overview,
+  stale = false,
+  interactive = true,
+}: {
+  overview: Overview;
+  stale?: boolean;
+  interactive?: boolean;
+}) {
   const { assignment, teams } = overview;
 
   return (
@@ -42,7 +56,7 @@ export default function TeacherAssignment() {
         </p>
       </div>
 
-      {error && (
+      {stale && (
         <p className="mt-4 text-sm text-stone-500">Couldn't refresh just now. Showing the last update.</p>
       )}
 
@@ -53,7 +67,7 @@ export default function TeacherAssignment() {
       ) : (
         <div className="mt-8 grid gap-6 md:grid-cols-2">
           {teams.map((t) => (
-            <TeamCard key={t.id} overview={t} />
+            <TeamCard key={t.id} overview={t} interactive={interactive} />
           ))}
         </div>
       )}
@@ -61,18 +75,13 @@ export default function TeacherAssignment() {
   );
 }
 
-function TeamCard({ overview }: { overview: TeamOverview }) {
+function TeamCard({ overview, interactive }: { overview: TeamOverview; interactive: boolean }) {
   const { id, name, charter_locked, member_count, health, disputed_entries, flagged_pastes } = overview;
   const { setCurrentUser } = useCurrentUser();
   const h = HEALTH[health];
 
-  return (
-    // Opening a team as "teacher" makes the workspace read-only (no member identity).
-    <Link
-      to={`/team/${id}`}
-      onClick={() => setCurrentUser("teacher")}
-      className="block rounded-xl border border-stone-200 bg-white p-6 transition hover:border-accent hover:shadow-sm"
-    >
+  const content = (
+    <>
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-xl font-semibold">{name}</h2>
         <span className="flex items-center gap-2 text-stone-700">
@@ -93,6 +102,19 @@ function TeamCard({ overview }: { overview: TeamOverview }) {
           {plural(flagged_pastes, "unlabelled paste")} in the team document.
         </p>
       )}
+    </>
+  );
+
+  if (!interactive) return <div className="rounded-xl border border-stone-200 bg-white p-6">{content}</div>;
+
+  return (
+    // Opening a team as "teacher" makes the workspace read-only (no member identity).
+    <Link
+      to={`/team/${id}`}
+      onClick={() => setCurrentUser("teacher")}
+      className="block rounded-xl border border-stone-200 bg-white p-6 transition hover:border-accent hover:shadow-sm"
+    >
+      {content}
     </Link>
   );
 }
