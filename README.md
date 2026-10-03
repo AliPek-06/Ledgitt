@@ -34,3 +34,10 @@ npm run dev
 ```
 
 App at http://localhost:5173.
+
+To run the frontend without the backend, using the Group 7 fixtures in
+`frontend/src/mocks/`:
+
+```bash
+npm run dev:mocks          # or set VITE_USE_MOCKS=true in frontend/.env.local
+```

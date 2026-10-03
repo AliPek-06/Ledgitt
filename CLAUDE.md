@@ -38,3 +38,50 @@ what was built or changed, key files, decisions made, and anything left open.
   API.md disagree here.
   - API.md has no endpoints yet.
   - The Contribution model is truncated after actual_points.
+### 2026-10-03 - Phase F1: frontend scaffold, API client, mocks
+- Vite + React 19 + TypeScript + Tailwind v4 (@tailwindcss/vite) + React Router 7 in
+  frontend/. Written by hand: Node was not installed on the dev machine, so
+  `npm install` and a typecheck have NOT been run yet.
+- src/api/types.ts: every model in API.md, plus request-body types and Clock.
+- src/api/client.ts: one function per endpoint, base http://localhost:8000/api.
+  `VITE_USE_MOCKS=true` (or `npm run dev:mocks`, which loads .env.mocks) routes every
+  call to src/mocks/mockApi.ts.
+- src/mocks/fixtures.ts: assignment 1 (join code GRP7K4, checkpoints 0.33/0.66),
+  team 1 "Group 7" (Maya 1, Jordan 2, Priya 3, Sam 4), locked 6-item charter,
+  11 entries (5 confirmed, 4 pending, 2 disputed), one flagged paste (Jordan), one
+  internal paste (Priya), one private alert for Sam at 0.33. Mock now = 2026-09-24.
+- src/mocks/mockApi.ts: in-memory store; re-derives entry status and contributions
+  per RULES.md, hides records after "now", supports a demo clock override.
+  Checkpoints are not re-evaluated in mocks.
+- Routes (placeholders): /teacher/new, /teacher/:assignmentId, /join/:code,
+  /team/:teamId/charter, /team/:teamId, plus a dev index at /.
+- CurrentUserContext (member id or "teacher", saved in localStorage) and a header
+  switcher listing the members of the team in the URL.
+- Open:
+  - API.md has no endpoints. client.ts has a DRAFT endpoint list in its header
+    comment; it needs agreeing and copying into API.md before the backend builds them.
+  - Contribution type guesses `progress_ratio: number | null` and
+    `status: "not_started_yet" | "on_track" | "behind"` (API.md is truncated).
+  - AlertLevel keeps "teacher" to match API.md. RULES.md does not define what the
+    teacher sees; the mock shows the teacher team-level alerts only.
+  - Labelling a paste (POST /pastes/{id}/label) mutates a PasteEvent. PasteEvent is
+    not marked append-only, but confirm that is intended.
+### 2026-10-03 - API contract completed; F1 client and mocks aligned to it
+- docs/API.md now holds the full contract from section 3 of the build guide:
+  `/api` prefix, the endpoint table (23 endpoints incl. /demo/*), and the rest of
+  the Contribution model (`progress_ratio: float | null`, `status`).
+- Response shapes the guide described only in prose were defined in API.md:
+  AssignmentCreated (Assignment + join_url), JoinInfo, TeamDetail (Team + members +
+  charter_items), Overview / TeamOverview (health, open_disputes, teacher_alerts),
+  DemoTime. POST /entries/{id}/reviews returns the updated Entry. /demo/seed and
+  /demo/reset return {"ok": true}. Errors are FastAPI {"detail": ...}.
+- frontend/src/api/types.ts, client.ts and src/mocks/mockApi.ts rewritten to match.
+  ApiError moved to src/api/errors.ts. Mocks enforce the 400/403 rules (self-review,
+  double review, dispute note, charter validation and lock, paste label owner).
+- Supersedes the F1 open items "API.md has no endpoints" and "Contribution guessed".
+- Open:
+  - RULES.md vs API.md still disagree on checkpoint defaults (0.33/0.66 vs
+    0.25/0.5/0.75) and the "teacher" alert level. API.md keeps "teacher", and the
+    overview/alerts endpoints depend on it. Mocks use 0.33/0.66.
+  - `npm run typecheck` and `npm run build` pass (Node 24). The F1 "Done when"
+    checks in the browser still need doing by hand.
