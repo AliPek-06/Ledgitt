@@ -3,6 +3,7 @@
 Not stored: Entry.status and Entry.reviews (derived from Review rows) and
 Contribution (computed per member). Evidence is stored as JSON on Entry.
 created_at values are set by callers from app/services/clock.py, never here.
+All datetimes are timezone-aware UTC.
 """
 
 from datetime import datetime

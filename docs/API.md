@@ -4,7 +4,8 @@ Source of truth for data models shared by backend and frontend.
 Do not change field names without updating this file.
 
 Conventions:
-- All timestamps are ISO 8601 strings.
+- All timestamps are ISO 8601 strings in UTC, returned with a `Z` suffix. Input without a timezone is treated as UTC.
+- Validation errors return `422`, missing resources return `404`.
 - `*_pct` values are fractions of the project timeline, `0.0`–`1.0`.
 - List endpoints hide any record with `created_at > now` (see [RULES.md](RULES.md#time)).
 
@@ -143,4 +144,33 @@ Computed per member, not stored.
 
 ## Endpoints
 
-**TODO:** no endpoints were included in the contract yet.
+### Health
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/api/health` | | `{"ok": true}` |
+
+### Assignments and teams
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| POST | `/api/assignments` | `{title, start_date, due_date, checkpoints?}` | `201` AssignmentDetail |
+| GET | `/api/assignments/{id}` | | AssignmentDetail |
+| GET | `/api/join/{join_code}` | | AssignmentDetail (code is case-insensitive) |
+| POST | `/api/assignments/{id}/teams` | `{name}` | `201` [Team](#team) |
+| POST | `/api/teams/{id}/members` | `{name}` | `201` [Member](#member) |
+| GET | `/api/teams/{id}` | | TeamDetail |
+
+- `POST /api/assignments`: `due_date` must be after `start_date`. `checkpoints` are optional, each must be strictly between 0 and 1, and they are stored sorted. The server generates a 6-character `join_code` from `A–Z` and `2–9`, leaving out the look-alike characters `0`, `O`, `1` and `I`.
+- **AssignmentDetail** = [Assignment](#assignment) fields + `join_url` (`http://localhost:5173/join/{join_code}`) + `teams: Team[]`.
+- **TeamDetail** = [Team](#team) fields + `members: Member[]`.
+
+### Demo time
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/api/demo/time` | | `{now, overridden}` |
+| POST | `/api/demo/time` | `{now: datetime \| null}` | `{now, overridden}` |
+
+- `now: null` clears the override and returns to real UTC time.
+- Due checkpoint evaluation will run here from phase B6.

@@ -6,6 +6,7 @@ from sqlmodel.pool import StaticPool
 from app import models  # noqa: F401  (registers tables)
 from app.db import get_session
 from app.main import app
+from app.services import clock
 
 
 @pytest.fixture
@@ -26,3 +27,10 @@ def client(session):
     # No `with` block: skip lifespan so tests never touch ledger.db.
     yield TestClient(app)
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def reset_clock():
+    clock.clear_override()
+    yield
+    clock.clear_override()

@@ -62,3 +62,23 @@ endpoint and that all tables exist.
 - requirements.txt: fastapi, uvicorn[standard], sqlmodel, pytest, httpx.
 - Dev machine only has Python 3.13 (venv at backend/.venv). Keep code 3.11-compatible.
 - No other endpoints yet.
+### 2026-10-03 - Phase B2: clock, assignments, teams, demo time
+- app/services/clock.py: now(), set_override(dt), clear_override(), is_overridden(),
+to_utc(dt). All datetimes are timezone-aware UTC because sqlmodel>=0.0.47 rejects
+naive datetimes. Naive input is treated as UTC. The API returns ISO strings with "Z".
+- app/schemas.py: Pydantic request/response models (AssignmentCreate validates
+due_date > start_date and that checkpoints are in (0, 1); stores them sorted).
+- app/routers/assignments.py: POST /api/assignments, GET /api/assignments/{id},
+GET /api/join/{code} (case-insensitive), POST /api/assignments/{id}/teams.
+Join codes are 6 characters from A-Z and 2-9, leaving out 0/O/1/I.
+join_url = http://localhost:5173/join/{code}.
+- app/routers/teams.py: POST /api/teams/{id}/members, GET /api/teams/{id} (with members).
+- app/routers/demo.py: GET/POST /api/demo/time; body {now: datetime|null}, null clears.
+Marked "B6" where checkpoint evaluation must be hooked in.
+- docs/API.md now has an Endpoints section documenting all of the above.
+- tests/conftest.py has an autouse fixture that clears the clock override.
+26 tests across test_clock, test_assignments, test_teams, test_demo_time.
+- Not done or open:
+  - No duplicate-name check on members.
+  - Adding members is not blocked when the charter is locked.
+  - API.md model section still has the stale "teacher" level and checkpoint default.

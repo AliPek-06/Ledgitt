@@ -1,5 +1,5 @@
 fastapi>=0.115
 uvicorn[standard]>=0.30
-sqlmodel>=0.0.22
+sqlmodel>=0.0.47  # datetimes are stored and returned as aware UTC
 pytest>=8
 httpx>=0.27
