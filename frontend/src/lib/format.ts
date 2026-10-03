@@ -1,6 +1,19 @@
 const dateFormat = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" });
 const shortDateFormat = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" });
 
+const dateTimeFormat = new Intl.DateTimeFormat(undefined, {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+// e.g. "Thu 24 Sep, 10:00"
+export function formatDateTime(iso: string): string {
+  return dateTimeFormat.format(new Date(iso));
+}
+
 export function formatDate(iso: string): string {
   return dateFormat.format(new Date(iso));
 }

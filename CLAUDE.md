@@ -133,3 +133,30 @@ what was built or changed, key files, decisions made, and anything left open.
   end, as in the B7 seed); Sam's alert reason updated to ~3.8 expected points.
 - Verified: typecheck + build pass; mock join flow and charter save / validation /
   lock / save-after-lock checked in Node. Not yet checked in a browser.
+### 2026-10-03 - Phase F4: workspace shell and ledger
+- /team/:teamId (src/pages/TeamWorkspace.tsx): team name + members, charter link,
+  alerts banner, tabs Ledger / Document / Progress. The tab lives in `?tab=` (ledger is
+  the default) so the route list from F1 is unchanged. Document and Progress are
+  placeholders for F5/F6. Team (GET /teams/{id}) and alerts are polled every 3s.
+- User switcher: reuses the global header switcher (already on every page) rather
+  than adding a second one inside the workspace.
+- Read-only: anyone who isn't a member of the team (incl. "teacher", as opened from
+  the F2 dashboard) gets a notice and no log form or review buttons.
+- AlertsBanner (src/components/AlertsBanner.tsx): open alerts only. A private alert
+  about you = teal "Just for you" note ("You're a bit behind your plan for this
+  stage."); team-level = amber ("X has some catching up to do."); teacher-level =
+  red ("X could use some support."). Visibility filtering is left to the API.
+- Ledger tab (src/components/ledger/): LogWorkForm (description, S/M/L with hints and
+  points, optional charter item from your own items, optional evidence links sent as
+  kind "url"; bare domains get https://), entry feed (newest first, author, time,
+  size, status chip, charter item, evidence, reviews, "n of m confirmations needed"
+  while pending). Confirm/Dispute hidden on your own entries, after you've reviewed,
+  and for read-only viewers. DisputeModal requires a note. Status chips: confirmed
+  green, disputed amber, pending neutral.
+- usePolling now returns refresh(): polls immediately after a log/review; if a poll
+  is in flight, one more runs after it so the new data isn't missed.
+- lib/entries.ts: SIZES, confirmsNeeded(), status styles, evidence labels.
+- Verified: typecheck + build pass; in Node against mocks: alert visibility (Sam sees
+  the private alert about Sam, Maya and teacher don't), newest-first order, pending ->
+  confirmed after 2 confirms -> disputed, and the self-review / double-review /
+  empty-note rejections. Not yet checked in a browser.
