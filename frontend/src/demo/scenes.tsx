@@ -21,7 +21,7 @@ import { TeacherOverview } from "../pages/TeacherAssignment";
 import * as S from "./script";
 
 export interface SceneProps {
-  step: number; // index into S.steps
+  step: number; // step within the current section (0, 1, 2, …)
   elapsed: number; // ms since the step started; Infinity once finished
 }
 
@@ -46,7 +46,7 @@ function Heading({ kicker, title, right }: { kicker: string; title: string; righ
   );
 }
 
-// ---- Charter (steps 0-2) ----
+// ---- Charter (section steps 0-2) ----
 
 const NAME_MS = 55; // per character
 const NAME_GAP = 120; // pause between names
@@ -116,20 +116,30 @@ function Padlock() {
   );
 }
 
-// ---- Document (steps 3-5) ----
+// ---- Document (section steps 0-2) ----
+
+// Slide 7 (Jordan labels the paste), paced slowly enough to follow (ms).
+const LABEL_TIMING = {
+  open: 200, // pop-up appears
+  choose: 900, // "My own notes" selected
+  typeFrom: 1400, // note starts typing
+  perChar: 55, // "From my lecture notes" takes ~1.2 s
+  save: 2750, // Save pressed ("Saving…")
+  done: 3150, // pop-up closes, flag clears
+};
 
 const tint = (author: number, alpha: number) => `rgb(${S.AUTHOR_COLOR[author]} / ${alpha})`;
 
 export function DocumentScene({ step, elapsed }: SceneProps) {
   const at = (ms: number) => elapsed >= ms;
-  const tinted = step > 3 || at(150);
+  const tinted = step > 0 || at(150);
 
-  // Step 4: the paste is flagged. Step 5: Jordan labels it and it clears.
-  const modalOpen = step === 5 && at(150) && !at(1350);
-  const labelled = step === 5 && at(1350);
-  const flagged = (step === 4 && at(200)) || (step === 5 && !labelled);
+  // Step 1: the paste is flagged. Step 2: Jordan labels it and it clears.
+  const modalOpen = step === 2 && at(LABEL_TIMING.open) && !at(LABEL_TIMING.done);
+  const labelled = step === 2 && at(LABEL_TIMING.done);
+  const flagged = (step === 1 && at(200)) || (step === 2 && !labelled);
 
-  const viewer = step === 5 ? member(S.JORDAN) : step === 4 ? member(S.MAYA) : undefined;
+  const viewer = step === 2 ? member(S.JORDAN) : step === 1 ? member(S.MAYA) : undefined;
   const pastes = flagged ? [S.paste] : [];
 
   return (
@@ -180,9 +190,9 @@ export function DocumentScene({ step, elapsed }: SceneProps) {
       {modalOpen && (
         <LabelPasteForm
           paste={S.paste}
-          label={at(450) ? "my_notes" : null}
-          note={typed(S.PASTE_LABEL_NOTE, elapsed, 550, 25)}
-          busy={at(1150)}
+          label={at(LABEL_TIMING.choose) ? "my_notes" : null}
+          note={typed(S.PASTE_LABEL_NOTE, elapsed, LABEL_TIMING.typeFrom, LABEL_TIMING.perChar)}
+          busy={at(LABEL_TIMING.save)}
           onLabel={noop}
           onNote={noop}
           onSubmit={noop}
@@ -216,7 +226,7 @@ function AuthorLegend({ visible }: { visible: boolean }) {
   );
 }
 
-// ---- Ledger (steps 6-8) ----
+// ---- Ledger (section steps 0-2) ----
 
 const EMPTY_FORM: LogWorkValues = { description: "", size: "M", charterItemId: null, links: [] };
 
@@ -224,11 +234,11 @@ export function LedgerScene({ step, elapsed }: SceneProps) {
   const at = (ms: number) => elapsed >= ms;
   const maya = member(S.MAYA);
 
-  // Step 6: Maya fills in the form and logs it.
+  // Step 0: Maya fills in the form and logs it.
   let values = EMPTY_FORM;
   let submitting = false;
-  let logged = step > 6;
-  if (step === 6) {
+  let logged = step > 0;
+  if (step === 0) {
     logged = at(1350);
     submitting = at(1150) && !logged;
     if (!logged) {
@@ -241,40 +251,40 @@ export function LedgerScene({ step, elapsed }: SceneProps) {
     }
   }
 
-  // Step 7: Jordan's and Priya's confirmations arrive one after the other.
-  const confirmations = step < 7 ? [] : S.mayaConfirmations.filter((_, i) => step > 7 || at(i === 0 ? 300 : 900));
+  // Step 1: Jordan's and Priya's confirmations arrive one after the other.
+  const confirmations = step < 1 ? [] : S.mayaConfirmations.filter((_, i) => step > 1 || at(i === 0 ? 300 : 900));
   const mayaEntry: Entry = {
     ...S.mayaEntry,
     reviews: confirmations,
     status: confirmations.length >= 2 ? "confirmed" : "pending",
   };
 
-  // Step 8: Priya disputes Jordan's entry; paragraphs 4-5 light up in her colour.
-  const disputed = step === 8 && at(450);
+  // Step 2: Priya disputes Jordan's entry; paragraphs 4-5 light up in her colour.
+  const disputed = step === 2 && at(450);
   const jordanEntry: Entry = {
     ...S.jordanEntry,
     reviews: disputed ? [S.priyaDispute] : [],
     status: disputed ? "disputed" : "pending",
   };
 
-  const feed = [...(step === 8 ? [jordanEntry] : []), ...(logged ? [mayaEntry] : []), ...S.earlierEntries];
+  const feed = [...(step === 2 ? [jordanEntry] : []), ...(logged ? [mayaEntry] : []), ...S.earlierEntries];
 
   return (
     <div className="grid items-start gap-8 grid-cols-[22rem_1fr]">
-      {step < 8 ? (
+      {step < 2 ? (
         <LogWorkFormView
           team={S.team}
           me={maya}
           values={values}
           onChange={noop}
           submitting={submitting}
-          justLogged={step === 6 && logged}
+          justLogged={step === 0 && logged}
           canSubmit={values.description !== ""}
           onSubmit={(e) => e.preventDefault()}
           compact
         />
       ) : (
-        <MiniDocument highlightPriya={step === 8 && at(800)} />
+        <MiniDocument highlightPriya={step === 2 && at(800)} />
       )}
       <div className="demo-pop-items space-y-4">
         {feed.map((e) => (
@@ -319,18 +329,18 @@ function MiniDocument({ highlightPriya }: { highlightPriya: boolean }) {
   );
 }
 
-// ---- Checkpoints (steps 9-11) ----
+// ---- Checkpoints (section steps 0-2) ----
 
 export function CheckpointsScene({ step, elapsed }: SceneProps) {
   const at = (ms: number) => elapsed >= ms;
   // The timeline glides to just past each checkpoint (CSS transition on left/width).
   // 0.335 / 0.665: just past each checkpoint, so the alerts are due, and it reads 33% / 66%.
-  const t = step === 9 ? (at(60) ? 0.335 : 0.2) : step === 10 ? 0.335 : at(60) ? 0.665 : 0.335;
-  const viewer = step === 9 ? S.SAM : S.MAYA;
+  const t = step === 0 ? (at(60) ? 0.335 : 0.2) : step === 1 ? 0.335 : at(60) ? 0.665 : 0.335;
+  const viewer = step === 0 ? S.SAM : S.MAYA;
 
   // What this viewer can see, appearing once the timeline has arrived.
   const arrived = at(1250);
-  const alerts: Alert[] = step === 9 ? (arrived ? [S.privateAlert] : []) : step === 11 && arrived ? [S.teamAlert] : [];
+  const alerts: Alert[] = step === 0 ? (arrived ? [S.privateAlert] : []) : step === 2 && arrived ? [S.teamAlert] : [];
 
   return (
     <div>
@@ -353,7 +363,7 @@ export function CheckpointsScene({ step, elapsed }: SceneProps) {
   );
 }
 
-// ---- Progress (step 12) ----
+// ---- Progress ----
 
 export function ProgressScene() {
   const viewer = S.MAYA;
@@ -385,7 +395,7 @@ export function ProgressScene() {
   );
 }
 
-// ---- Teacher (step 13) ----
+// ---- Teacher ----
 
 export function TeacherScene() {
   return (
@@ -395,7 +405,7 @@ export function TeacherScene() {
   );
 }
 
-// ---- Close (step 14) ----
+// ---- Title card (first and last step) ----
 
 export function CloseScene() {
   return (

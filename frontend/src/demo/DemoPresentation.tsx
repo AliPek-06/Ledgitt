@@ -50,7 +50,7 @@ export default function DemoPresentation() {
   }, []);
   const [now, setNow] = useState(() => performance.now());
   const [captionVisible, setCaptionVisible] = useState(true);
-  const scale = useStageScale();
+  const stage = useStageSize();
 
   const step = steps[pos.index];
   const elapsed = pos.settled ? Infinity : now - pos.start;
@@ -109,14 +109,17 @@ export default function DemoPresentation() {
     return () => window.removeEventListener("keydown", onKey);
   }, [next, goTo, navigate]);
 
-  const sceneProps: SceneProps = { step: pos.index, elapsed };
+  // Scenes get their step within the section, so adding steps elsewhere never
+  // shifts what a scene shows.
+  const sectionStart = steps.findIndex((s) => s.section === step.section);
+  const sceneProps: SceneProps = { step: pos.index - sectionStart, elapsed };
   const sectionKey = step.section ?? "close";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-stone-900">
       <div
         className="demo-stage relative flex flex-col overflow-hidden bg-stone-50 text-stone-900"
-        style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${scale})`, flexShrink: 0 }}
+        style={{ width: stage.width, height: stage.height, transform: `scale(${stage.scale})`, flexShrink: 0 }}
       >
         <TopBar section={step.section} viewer={step.viewer} />
 
@@ -203,15 +206,19 @@ function TopBar({ section, viewer }: { section: Section | null; viewer?: number 
   );
 }
 
-// Scales the fixed 1280x720 stage to fit the window, so it looks the same on a
-// laptop and a projector.
-function useStageScale(): number {
-  const compute = () => Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H);
-  const [scale, setScale] = useState(compute);
+// Scales the stage so a 1280x720 design fits the window (same look on a laptop
+// and a projector), then stretches the looser dimension so the stage always fills
+// the window exactly: no black bars on screens that aren't 16:9.
+function useStageSize(): { scale: number; width: number; height: number } {
+  const compute = () => {
+    const scale = Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H);
+    return { scale, width: window.innerWidth / scale, height: window.innerHeight / scale };
+  };
+  const [size, setSize] = useState(compute);
   useEffect(() => {
-    const onResize = () => setScale(compute());
+    const onResize = () => setSize(compute());
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
-  return scale;
+  return size;
 }

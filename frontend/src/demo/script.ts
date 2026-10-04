@@ -239,19 +239,20 @@ export const SECTIONS = ["Charter", "Document", "Ledger", "Checkpoints", "Progre
 export type Section = (typeof SECTIONS)[number];
 
 export interface Step {
-  section: Section | null; // null = the closing title card
+  section: Section | null; // null = a title card (opening and closing)
   caption: string;
   viewer?: number | "teacher"; // shown as "Viewing as" when it matters
-  duration: number; // ms of animation when the step is entered (all < 1500)
+  duration: number; // ms of animation when the step is entered (< 1500, except slide 7)
 }
 
 export const steps: Step[] = [
+  { section: null, caption: "", duration: 500 }, // opening title card, same as the closing one
   { section: "Charter", caption: "A team forms and agrees who does what, and when.", duration: 1450 },
   { section: "Charter", caption: "Everyone is measured against their own plan, not an equal split.", duration: 1400 },
   { section: "Charter", caption: "Once locked, the plan becomes the baseline.", duration: 900 },
   { section: "Document", caption: "The shared document shows who wrote what.", duration: 900 },
   { section: "Document", caption: "Large pastes are flagged for the team to see.", viewer: MAYA, duration: 900 },
-  { section: "Document", caption: "The writer explains it, and the warning clears. No accusation.", viewer: JORDAN, duration: 1450 },
+  { section: "Document", caption: "The writer explains it, and the warning clears. No accusation.", viewer: JORDAN, duration: 3200 }, // slowed on request; the only step over 1.5 s
   { section: "Ledger", caption: "Every kind of work gets logged, with evidence.", viewer: MAYA, duration: 1450 },
   { section: "Ledger", caption: "Teammates confirm it. Only confirmed work counts.", viewer: MAYA, duration: 1200 },
   { section: "Ledger", caption: "Disagreements surface early, backed by evidence.", viewer: MAYA, duration: 1300 },

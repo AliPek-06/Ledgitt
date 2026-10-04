@@ -484,3 +484,18 @@ reverted, so ProgressTab is unchanged.
 Mid-animation screenshots lag there; a visible presenter tab animates normally.
 - Later change: the closing title card shows only "Ledgitt" (tagline removed). Its
 step duration is 500 ms, enough for the name's fade-in.
+- Later change: the presentation opens with the same title card as it closes on
+("Ledgitt"), so there are 16 steps.
+  - Scenes now receive their step within the section: DemoPresentation passes
+  pos.index - first index of that section. Charter/Document/Ledger/Checkpoints use
+  0-2, so inserting steps elsewhere never shifts a scene.
+  - Verified: all 16 finished states, forward == back, and the first title card is
+  identical to the last.
+- Later change: slide 7 (Jordan labels the paste) slowed on request to 3.2 s, the
+only step over the brief's 1.5 s cap. Timings are in LABEL_TIMING in
+scenes.tsx: pop-up at 200 ms, "My own notes" at 900 ms, note types from 1400 ms at
+55 ms/char, Saving at 2750 ms, cleared at 3150 ms. Enter still finishes it early.
+- Later change: no more black bars. useStageSize() keeps the 1280x720 scale
+(min of the width/height ratios) but sets the stage to window size / scale, so it
+always fills the window; on non-16:9 screens the looser dimension just gets more
+room. Not re-tested in the browser (user asked for no test runs).
